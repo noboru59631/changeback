@@ -2,9 +2,9 @@ import { encodeFunctionData, keccak256, toBytes } from 'viem'
 import type { Address, Hex, PublicClient } from 'viem'
 import { VAULT_ABI } from './abi'
 
-export async function prepareCappedTransaction(client: PublicClient, account: Address, vault: Address, data: Hex, maximumGas: bigint, expectedChainId = 5042002, reserve = 0n) {
+export async function prepareCappedTransaction(client: PublicClient, account: Address, vault: Address, data: Hex, maximumGas: bigint, expectedChainId = 5042002, reserve = 0n, feeCap = 50_000_000_000n) {
   if (![5042, 5042002].includes(expectedChainId) || await client.getChainId() !== expectedChainId) throw new Error('RPC chain mismatch.')
-  const maxFeePerGas = 50_000_000_000n
+  const maxFeePerGas = feeCap
   const maxPriorityFeePerGas = 5_000_000_000n
   const transaction = { account, to: vault, value: 0n,
     data,
@@ -60,6 +60,6 @@ export async function prepareEarlyReturn(client: PublicClient, account: Address,
   }
   const args = [keccak256(toBytes(expectedChainId === 5042 ? 'ChangeBack microgrants 0.03 USDC demonstration' : '')), expiresAt] as const
   const data = encodeFunctionData({ abi: VAULT_ABI, functionName: 'proposeEarlyReturn', args })
-  const fees = await prepareCappedTransaction(client, account, vault, data, expectedChainId === 5042 ? 132_422n : 127_422n, expectedChainId)
+  const fees = await prepareCappedTransaction(client, account, vault, data, expectedChainId === 5042 ? 150_000n : 127_422n, expectedChainId, 0n, expectedChainId === 5042 ? 44_000_000_000n : 50_000_000_000n)
   return { ...fees, args, data, account, expiresAt, proposalCount, validUntil: Date.now() + 120_000 }
 }
