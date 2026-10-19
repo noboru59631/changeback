@@ -438,8 +438,8 @@ export function StepCreate({
         <div className="rounded-xl bg-red-50 border border-red-100 px-3 py-2.5 flex items-start gap-2 text-xs text-red-700">
           <ShieldOff size={13} className="shrink-0 mt-0.5" />
           <span>
-            Create is disabled. The factory address must appear in the reviewed deployment
-            allowlist for {chainConfig?.label}.
+            Create is disabled. Connect your wallet on {chainConfig?.label} and configure
+            a reviewed factory address.
           </span>
         </div>
       )}

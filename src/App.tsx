@@ -215,8 +215,8 @@ export default function App() {
             <div className="font-semibold mb-1">Arc Mainnet — real funds</div>
             <p className="text-xs leading-relaxed mb-3">
               You are viewing Arc Mainnet. Transactions involve real USDC and are irreversible.
-              No reviewed mainnet factory deployment exists yet. Write operations are disabled
-              by the factory allowlist until a reviewed deployment is approved and configured.
+              Use a reviewed factory and connect your wallet on Arc Mainnet before submitting
+              a transaction. Check the recipient, amount, and network fee in your wallet.
             </p>
             <button
               onClick={() => setMainnetAcknowledged(true)}
