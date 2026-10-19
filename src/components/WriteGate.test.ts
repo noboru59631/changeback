@@ -181,8 +181,8 @@ describe('gateReason — unreviewed factory (Arc Mainnet)', () => {
     )).toBe('unreviewed-factory')
   })
 
-  it('REVIEWED_FACTORY_ADDRESSES[mainnet] is empty (no mainnet deployment approved)', () => {
-    expect(REVIEWED_FACTORY_ADDRESSES[ARC_MAINNET_CHAIN_ID]).toEqual([])
+  it('REVIEWED_FACTORY_ADDRESSES[mainnet] contains only the verified mainnet factory', () => {
+    expect(REVIEWED_FACTORY_ADDRESSES[ARC_MAINNET_CHAIN_ID]).toEqual(['0xe5FB5C1081b951D47fCAAC554ebe3A095EEF25Fb'])
   })
 
   it('REVIEWED_FACTORY_ADDRESSES[testnet] contains exactly the deployed factory address', () => {
@@ -364,8 +364,8 @@ describe('gateReason — full ok path (reviewed factory + registered vault)', ()
     )).toBe('ok')
   })
 
-  it('mainnet reviewed factory (empty) still returns unreviewed-factory on mainnet', () => {
-    // Mainnet allowlist is empty — no entry exists even for the testnet factory address.
+  it('testnet reviewed factory still returns unreviewed-factory on mainnet', () => {
+    // The testnet factory is not approved for mainnet.
     expect(gateReason(
       ARC_MAINNET_CHAIN_ID, true, ARC_MAINNET_CHAIN_ID,
       REVIEWED_FACTORY_TESTNET,  // testnet address is NOT in mainnet allowlist
@@ -374,8 +374,10 @@ describe('gateReason — full ok path (reviewed factory + registered vault)', ()
     )).toBe('unreviewed-factory')
   })
 
-  it('mainnet allowlist remains empty regardless of testnet approval', () => {
-    expect(REVIEWED_FACTORY_ADDRESSES[ARC_MAINNET_CHAIN_ID]).toHaveLength(0)
+  it('mainnet allowlist contains only the receipt-verified deployment', () => {
+    expect(REVIEWED_FACTORY_ADDRESSES[ARC_MAINNET_CHAIN_ID]).toEqual(['0xe5FB5C1081b951D47fCAAC554ebe3A095EEF25Fb'])
+    expect(gateReason(ARC_MAINNET_CHAIN_ID, true, ARC_MAINNET_CHAIN_ID,
+      '0xe5FB5C1081b951D47fCAAC554ebe3A095EEF25Fb', FAKE_VAULT, true, false, false)).toBe('ok')
   })
 
   it('testnet allowlist has exactly one entry after deployment approval', () => {

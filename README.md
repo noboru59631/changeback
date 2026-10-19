@@ -2,7 +2,7 @@
 
 A time-bounded shared USDC budget built in Arc Studio. Participants collect funds, approve payments by quorum, and return unspent funds to contributors before closing the vault.
 
-**Release status: pre-mainnet.** The existing Arc Testnet lifecycle completed with 0.10 test USDC deposited, 0.03 paid, 0.07 refunded, zero outstanding liability and a Closed vault. The public app is deployed and reads that vault. Reviewed frontend fixes are now reconciled with the existing Studio project. Mainnet deployment, transaction proof, video and grant submission remain pending. The Studio-derived source is now published at https://github.com/noboru59631/changeback. See [current release status](CURRENT_STATUS.md) and [the current read-only Mainnet gas review](docs/current-mainnet-estimates.md).
+**Release status: Factory deployed; Mainnet application demonstration pending.** The user signed the reviewed Factory deployment on Arc Mainnet. The receipt and deployed runtime were verified. Actual deployment gas cost was 0.06523910 USDC. The public source includes the verified Factory configuration and approved gas allocation. Vault creation, USDC deposit/payment/refund, closure, video and grant submission are still pending. See [current execution status](CURRENT_STATUS.md) and [the execution record](docs/mainnet-execution.md).
 
 ## Links
 
@@ -10,7 +10,8 @@ A time-bounded shared USDC budget built in Arc Studio. Participants collect fund
 - Builder: https://github.com/noboru59631
 - Public app: https://changeback-arc.crypto5555111.chatgpt.site
 - Public repository: https://github.com/noboru59631/changeback
-- Mainnet Factory / Vault / payment transaction / video: PENDING
+- Mainnet Factory: https://explorer.arc.io/address/0xe5FB5C1081b951D47fCAAC554ebe3A095EEF25Fb
+- Mainnet Vault / application payment transaction / video: PENDING
 
 ## How it works
 
@@ -52,7 +53,7 @@ bun test src/lib/mainnet-preflight.test.ts src/lib/payment-preflight.test.ts src
 bunx vite build
 ```
 
-Mainnet writes remain disabled until an actual reviewed Factory deployment is registered. Do not paste a predicted address into the allowlist. Arc Studio's managed testnet deployment script is not a Mainnet deployment route.
+The receipt-verified Mainnet Factory is now registered in the reviewed allowlist. Other addresses remain gated. Never add an unverified predicted address to the allowlist. Arc Studio's managed testnet deployment script is not a Mainnet deployment route.
 
 ## Review and limits
 

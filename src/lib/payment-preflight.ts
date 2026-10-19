@@ -47,7 +47,7 @@ export async function preparePayment(client: PublicClient, input: PaymentInput) 
   if (maxFeePerGas === undefined || maxPriorityFeePerGas === undefined || maxFeePerGas <= 0n ||
       maxPriorityFeePerGas > maxFeePerGas) throw new Error('RPC did not provide valid EIP-1559 fee caps.')
   const maxFee = gas * maxFeePerGas
-  if (input.chainId === 5042 && (gas > 200_000n || maxFeePerGas > 50_000_000_000n || maxPriorityFeePerGas > 5_000_000_000n)) {
+  if (input.chainId === 5042 && (gas > 195_000n || maxFeePerGas > 50_000_000_000n || maxPriorityFeePerGas > 5_000_000_000n)) {
     throw new Error('Payment proposal exceeds the mainnet network fee limit.')
   }
   if (balance < maxFee) throw new Error('Sender balance does not cover the maximum network fee.')

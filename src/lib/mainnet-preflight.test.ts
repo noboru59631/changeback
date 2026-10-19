@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import type { PublicClient } from 'viem'
+import { keccak256, toBytes, type PublicClient } from 'viem'
 import { prepareApproval, prepareCappedTransaction, prepareClose, prepareEarlyReturn, prepareExecution, prepareRefund } from './approval-preflight'
 import { preparePayment } from './payment-preflight'
 
@@ -49,6 +49,17 @@ describe('mainnet preparation without signing', () => {
     const { client } = fixture()
     const prepared = await prepareEarlyReturn(client, account, vault, '1', 5042)
     expect(prepared.expiresAt).toBe(1900003600n)
+    expect(prepared.args[0]).toBe(keccak256(toBytes('ChangeBack microgrants 0.03 USDC demonstration')))
+  })
+  it('accepts the approved early-return gas reallocation and rejects excess', async () => {
+    const { client } = fixture({ estimateGas: async () => 106197n })
+    expect((await prepareEarlyReturn(client, account, vault, '1', 5042)).gas).toBe(127437n)
+    const excessive = fixture({ estimateGas: async () => 110352n })
+    await expect(prepareEarlyReturn(excessive.client, account, vault, '1', 5042)).rejects.toThrow('network fee limit')
+  })
+  it('rejects payment proposals above the revised mainnet gas cap', async () => {
+    const { client } = fixture({ estimateGas: async () => 162501n })
+    await expect(preparePayment(client, input)).rejects.toThrow('mainnet network fee limit')
   })
   it('refuses gas beyond the cap after adding its buffer', async () => {
     const { client } = fixture({ estimateGas: async () => 98519n })

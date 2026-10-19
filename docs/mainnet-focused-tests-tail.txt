@@ -1,0 +1,38 @@
+SYNC_OK src/components/WriteGate.test.ts a
+3c526396804d640538d9d5f4c1010ceb9dd2472c87
+eeba03ee3bebb2b15afbd
+SYNC_OK src/lib/mainnet-preflight.test.ts 
+b77d785d7dff2b630dd1a086cae82fbce077bd124c
+94389084f2f2646c661924
+FOCUSED_TEST_EXIT 0
+(pass) gateReason — chain ID exact match >
+ 5042 and 5042002 are different chains (no
+t off-by-one) [0.02ms]
+(pass) gateReason — chain ID exact match >
+ wallet on Arc Testnet is wrong-chain for 
+selected Arc Mainnet [0.02ms]
+(pass) gateReason — full ok path (reviewed
+ factory + registered vault) > returns ok:
+ reviewed factory + registered vault + wal
+let on correct chain [0.02ms]
+(pass) gateReason — full ok path (reviewed
+ factory + registered vault) > returns ok 
+with upper-case reviewed factory address (
+case-insensitive) [0.05ms]
+(pass) gateReason — full ok path (reviewed
+ factory + registered vault) > testnet rev
+iewed factory still returns unreviewed-fac
+tory on mainnet [0.02ms]
+(pass) gateReason — full ok path (reviewed
+ factory + registered vault) > mainnet all
+owlist contains only the receipt-verified 
+deployment [0.03ms]
+(pass) gateReason — full ok path (reviewed
+ factory + registered vault) > testnet all
+owlist has exactly one entry after deploym
+ent approval [0.02ms]
+ 45 pass
+ 0 fail
+ 91 expect() calls
+Ran 45 tests across 2 files. [271.00ms]
+$ F 

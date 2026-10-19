@@ -3,8 +3,8 @@
  *
  * Supports both Arc Testnet (chainId 5042002) and Arc Mainnet (chainId 5042).
  * All write operations are disabled until the user's connected chain matches a
- * verified deployment configuration. No deployment config is baked in at this
- * pre-deployment stage; vault and factory addresses are entered at runtime.
+ * verified deployment configuration. Reviewed factories are listed below;
+ * vault and factory addresses are entered at runtime.
  *
  * Mainnet writes require explicit reviewed deployment config (factory address +
  * chain confirmation) and are never unlocked by merely connecting to mainnet.
@@ -93,7 +93,7 @@ export const USDC_DECIMALS  = testnetConfig.usdcDecimals
 //   and confirmed via read-only getters (USDC_ADDRESS, ARC_TESTNET_CHAIN_ID,
 //   ARC_MAINNET_CHAIN_ID, vaultCount). Receipt data supplied by user/coordinator.
 //
-// Arc Mainnet remains EMPTY — no mainnet deployment has been approved.
+// Arc Mainnet deployment approved and runtime verified on 2026-10-19.
 //
 // INVARIANT: write operations are disabled unless the user-provided factory
 // address appears in this list for the selected chain. Runtime user-pasted
@@ -103,7 +103,7 @@ export const REVIEWED_FACTORY_ADDRESSES: Readonly<Record<number, readonly `0x${s
   [ARC_TESTNET_CHAIN_ID]: [
     '0x0cf03f85278a7d1ce3057b77043e1b9af3da2ec0',  // ChangeBackFactory — deployed 2026-10-16
   ],
-  [ARC_MAINNET_CHAIN_ID]: [],   // EMPTY — no mainnet deployment approved
+  [ARC_MAINNET_CHAIN_ID]: ['0xe5FB5C1081b951D47fCAAC554ebe3A095EEF25Fb'],
 }
 
 /**

@@ -58,8 +58,8 @@ export async function prepareEarlyReturn(client: PublicClient, account: Address,
   if (proposals.some(proposal => proposal[0] === 1 && !proposal[6] && !proposal[7] && proposal[4] > block.timestamp)) {
     throw new Error('An active early-return proposal already exists.')
   }
-  const args = [keccak256(toBytes('')), expiresAt] as const
+  const args = [keccak256(toBytes(expectedChainId === 5042 ? 'ChangeBack microgrants 0.03 USDC demonstration' : '')), expiresAt] as const
   const data = encodeFunctionData({ abi: VAULT_ABI, functionName: 'proposeEarlyReturn', args })
-  const fees = await prepareCappedTransaction(client, account, vault, data, 127_422n, expectedChainId)
+  const fees = await prepareCappedTransaction(client, account, vault, data, expectedChainId === 5042 ? 132_422n : 127_422n, expectedChainId)
   return { ...fees, args, data, account, expiresAt, proposalCount, validUntil: Date.now() + 120_000 }
 }
