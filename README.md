@@ -2,14 +2,14 @@
 
 A time-bounded shared USDC budget built in Arc Studio. Participants collect funds, approve payments by quorum, and return unspent funds to contributors before closing the vault.
 
-**Release status: pre-mainnet.** The existing Arc Testnet lifecycle completed with 0.10 test USDC deposited, 0.03 paid, 0.07 refunded, zero outstanding liability and a Closed vault. The public app is deployed and reads that vault. Reviewed frontend fixes are now reconciled with the existing Studio project. Mainnet deployment, transaction proof, video and grant submission remain pending. This package is ready for repository publication; it does not prove that a public GitHub repository exists.
+**Release status: pre-mainnet.** The existing Arc Testnet lifecycle completed with 0.10 test USDC deposited, 0.03 paid, 0.07 refunded, zero outstanding liability and a Closed vault. The public app is deployed and reads that vault. Reviewed frontend fixes are now reconciled with the existing Studio project. Mainnet deployment, transaction proof, video and grant submission remain pending. The Studio-derived source is now published at https://github.com/noboru59631/changeback. See [current release status](CURRENT_STATUS.md) and [the current read-only Mainnet gas review](docs/current-mainnet-estimates.md).
 
 ## Links
 
 - Arc Studio: https://studio.arc.io/app/8fb26e26-3f43-40dc-a940-85228dbbf710
 - Builder: https://github.com/noboru59631
 - Public app: https://changeback-arc.crypto5555111.chatgpt.site
-- Public repository: PENDING (proposed: noboru59631/changeback)
+- Public repository: https://github.com/noboru59631/changeback
 - Mainnet Factory / Vault / payment transaction / video: PENDING
 
 ## How it works
