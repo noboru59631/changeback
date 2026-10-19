@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.arc-studio/
+.openai/
+contracts/cache/
+contracts/out/
+contracts/broadcast/
+*.key
+*.pem
+*.p12
+*.pfx

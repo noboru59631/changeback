@@ -1,0 +1,7 @@
+$ oxlint --type-aware src scripts --fix; s=$?; oxlint --fix .; exit $((s>0?s:$?))
+Found 0 warnings and 0 errors.
+Finished in 2.8s on 31 files with 57 rules using 4 threads.
+Found 0 warnings and 0 errors.
+Finished in 341ms on 34 files with 34 rules using 4 threads.
+$ tsc --noEmit
+CHECK_EXIT:0

@@ -1,0 +1,44 @@
+bun test v1.3.14 (0d9b296a)
+
+src/components/WriteGate.test.ts:
+(pass) gateReason — no wallet > returns no-wallet when isConnected=false regardless of other params [0.07ms]
+(pass) gateReason — no wallet > returns no-wallet even when walletChainId is set but isConnected=false [0.02ms]
+(pass) gateReason — wrong chain > returns wrong-chain when wallet is on Ethereum mainnet (1) but selected is Arc Testnet [0.02ms]
+(pass) gateReason — wrong chain > returns wrong-chain when wallet is on Arc Testnet but selected is Arc Mainnet [0.01ms]
+(pass) gateReason — wrong chain > returns wrong-chain when wallet is on Arc Mainnet but selected is Arc Testnet [0.02ms]
+(pass) gateReason — wrong chain > returns wrong-chain when walletChainId is undefined but isConnected=true [0.02ms]
+(pass) gateReason — unreviewed factory (Arc Testnet) > returns unreviewed-factory when factoryAddress is undefined [0.02ms]
+(pass) gateReason — unreviewed factory (Arc Testnet) > returns unreviewed-factory when factoryAddress is empty string [0.01ms]
+(pass) gateReason — unreviewed factory (Arc Testnet) > returns unreviewed-factory for a plausible-looking address not in allowlist [0.12ms]
+(pass) gateReason — unreviewed factory (Arc Testnet) > returns unreviewed-factory even when isVaultRegistered=true (allowlist takes precedence) [0.03ms]
+(pass) gateReason — unreviewed factory (Arc Testnet) > returns unreviewed-factory even when registry is loading [0.02ms]
+(pass) gateReason — unreviewed factory (Arc Mainnet) > returns unreviewed-factory on mainnet for an address not in allowlist [0.03ms]
+(pass) gateReason — unreviewed factory (Arc Mainnet) > returns unreviewed-factory on mainnet even with isVault=true [0.03ms]
+(pass) gateReason — unreviewed factory (Arc Mainnet) > REVIEWED_FACTORY_ADDRESSES[mainnet] is empty (no mainnet deployment approved) [0.03ms]
+(pass) gateReason — unreviewed factory (Arc Mainnet) > REVIEWED_FACTORY_ADDRESSES[testnet] contains exactly the deployed factory address [0.10ms]
+(pass) gateReason — registry state ordering (allowlist-first guard) > unreviewed-factory is returned before registry-loading when factory is NOT in allowlist [0.09ms]
+(pass) gateReason — registry state ordering (allowlist-first guard) > unreviewed-factory is returned before registry-error when factory is NOT in allowlist [0.03ms]
+(pass) gateReason — registry state ordering (allowlist-first guard) > unreviewed-factory is returned before vault-not-registered when factory is NOT in allowlist [0.02ms]
+(pass) gateReason — registry state ordering (allowlist-first guard) > returns registry-loading when reviewed factory + vault + registry still loading [0.02ms]
+(pass) gateReason — registry state ordering (allowlist-first guard) > returns registry-error when reviewed factory + vault + registry errored [0.02ms]
+(pass) gateReason — registry state ordering (allowlist-first guard) > returns vault-not-registered when reviewed factory + vault + registry returns false [0.02ms]
+(pass) gateReason — no vault address (StepCreate path) > returns unreviewed-factory (not registry states) when no vault address given [0.02ms]
+(pass) gateReason — no vault address (StepCreate path) > returns ok for reviewed factory with no vault address (StepCreate path) [0.02ms]
+(pass) gateReason — no vault address (StepCreate path) > returns ok for reviewed factory address in upper-case (case-insensitive match) [0.01ms]
+(pass) gateReason — argument precedence > wrong-chain is returned before unreviewed-factory [0.02ms]
+(pass) gateReason — argument precedence > no-wallet is returned before wrong-chain [0.03ms]
+(pass) gateReason — chain ID exact match > chain 5042002 matches itself (Arc Testnet) [0.01ms]
+(pass) gateReason — chain ID exact match > chain 5042 matches itself (Arc Mainnet)
+(pass) gateReason — chain ID exact match > 5042 and 5042002 are different chains (not off-by-one) [0.01ms]
+(pass) gateReason — chain ID exact match > wallet on Arc Testnet is wrong-chain for selected Arc Mainnet [0.02ms]
+(pass) gateReason — full ok path (reviewed factory + registered vault) > returns ok: reviewed factory + registered vault + wallet on correct chain [0.02ms]
+(pass) gateReason — full ok path (reviewed factory + registered vault) > returns ok with upper-case reviewed factory address (case-insensitive) [0.01ms]
+(pass) gateReason — full ok path (reviewed factory + registered vault) > mainnet reviewed factory (empty) still returns unreviewed-factory on mainnet [0.02ms]
+(pass) gateReason — full ok path (reviewed factory + registered vault) > mainnet allowlist remains empty regardless of testnet approval [0.01ms]
+(pass) gateReason — full ok path (reviewed factory + registered vault) > testnet allowlist has exactly one entry after deployment approval [0.01ms]
+
+ 35 pass
+ 0 fail
+ 41 expect() calls
+Ran 35 tests across 1 file. [249.00ms]
+BUN_GATE_EXIT:0

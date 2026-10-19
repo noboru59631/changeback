@@ -1,0 +1,68 @@
+bun test v1.3.14 (0d9b296a)
+
+src/components/StepCreate.test.ts:
+(pass) deadlinesFromBlockTimestamp > returns collectUntil = blockTs + 3600 [0.10ms]
+(pass) deadlinesFromBlockTimestamp > returns spendUntil = blockTs + 86400 [0.02ms]
+(pass) deadlinesFromBlockTimestamp > spendUntil is 23 hours after collectUntil [0.02ms]
+(pass) deadlinesFromBlockTimestamp > COLLECT_OFFSET_SECONDS is 3600 [0.01ms]
+(pass) deadlinesFromBlockTimestamp > SPEND_OFFSET_SECONDS is 86400
+(pass) deadlinesFromBlockTimestamp > works at block timestamp 0 [0.02ms]
+(pass) deadlinesFromBlockTimestamp > works at a realistic recent block timestamp [0.03ms]
+(pass) deadlinesFromBlockTimestamp > different block timestamps produce different deadlines [0.02ms]
+(pass) sortParticipants > sorts A < C < B (real testnet addresses) [0.03ms]
+(pass) sortParticipants > is case-insensitive [0.03ms]
+(pass) sortParticipants > does not mutate the input [0.02ms]
+(pass) sortParticipants > A is guardian (lowest address) [0.05ms]
+(pass) validateParticipants > passes with 2 valid addresses [0.13ms]
+(pass) validateParticipants > passes with all 3 testnet addresses [0.02ms]
+(pass) validateParticipants > rejects fewer than 2 participants [0.02ms]
+(pass) validateParticipants > rejects empty list [0.01ms]
+(pass) validateParticipants > rejects more than 20 participants [0.06ms]
+(pass) validateParticipants > rejects an invalid address [0.02ms]
+(pass) validateParticipants > rejects a duplicate address [0.06ms]
+(pass) validateParticipants > trims whitespace before validation [0.03ms]
+(pass) validateParticipants > ignores empty strings (filters them out) [0.08ms]
+(pass) validateThreshold > passes for threshold = 2 with 3 participants [0.05ms]
+(pass) validateThreshold > passes for threshold = 3 with 3 participants [0.02ms]
+(pass) validateThreshold > passes for threshold = 2 with 2 participants [0.01ms]
+(pass) validateThreshold > rejects threshold = 1 (too low)
+(pass) validateThreshold > rejects threshold exceeding participant count
+(pass) validateThreshold > rejects non-integer "2.5" [0.01ms]
+(pass) validateThreshold > rejects non-integer "2.0" [0.01ms]
+(pass) validateThreshold > rejects empty string
+(pass) validateThreshold > rejects scientific notation "2e0"
+(pass) validateThreshold > rejects negative "-2"
+(pass) gas cap constants > GAS_LIMIT_CAP is 3,000,000 [0.01ms]
+(pass) gas cap constants > MAX_FEE_PER_GAS is 30 Gwei [0.02ms]
+(pass) gas cap constants > MAX_PRIORITY_FEE is 1 Gwei [0.01ms]
+(pass) isPreflightStale detection (structural) > not stale when key matches [0.06ms]
+(pass) isPreflightStale detection (structural) > stale when account changes [0.03ms]
+(pass) isPreflightStale detection (structural) > stale when chain changes [0.02ms]
+(pass) isPreflightStale detection (structural) > stale when threshold changes [0.03ms]
+(pass) isPreflightStale detection (structural) > stale when participant removed [0.03ms]
+(pass) isPreflightStale detection (structural) > isPreflightStale is false when status is idle [0.03ms]
+(pass) buildPreflightKey > produces a stable key for the same inputs [0.02ms]
+(pass) buildPreflightKey > changes when account changes [0.02ms]
+(pass) buildPreflightKey > changes when selectedChainId changes [0.02ms]
+(pass) buildPreflightKey > changes when factory address changes [0.02ms]
+(pass) buildPreflightKey > changes when participants change [0.06ms]
+(pass) buildPreflightKey > changes when threshold changes [0.02ms]
+(pass) buildPreflightKey > is case-insensitive for factory and participants [0.05ms]
+(pass) gas clamp: submitted gasLimit ≤ GAS_LIMIT_CAP > estimate exactly at cap is accepted as-is [0.02ms]
+(pass) gas clamp: submitted gasLimit ≤ GAS_LIMIT_CAP > estimate below cap is submitted as-is [0.02ms]
+(pass) gas clamp: submitted gasLimit ≤ GAS_LIMIT_CAP > estimate above cap is blocked at preflight [0.01ms]
+(pass) gas clamp: submitted gasLimit ≤ GAS_LIMIT_CAP > old +10% buffer would have exceeded the cap for estimates above 2,727,273 [0.03ms]
+(pass) behavioral async invalidation — isSuperseded() > completes normally when no changes occur [0.27ms]
+(pass) behavioral async invalidation — isSuperseded() > is invalidated when input changes BEFORE getBlock resolves [5.71ms]
+(pass) behavioral async invalidation — isSuperseded() > is invalidated when input changes BETWEEN getBlock and estimateGas [0.19ms]
+(pass) behavioral async invalidation — isSuperseded() > is invalidated when input changes BETWEEN estimateGas and simulate [0.19ms]
+(pass) behavioral async invalidation — isSuperseded() > is invalidated when a NEWER run starts (token advances) during getBlock [0.26ms]
+(pass) behavioral async invalidation — isSuperseded() > is invalidated for change-and-change-back: token catches same-key second run [0.21ms]
+(pass) behavioral async invalidation — isSuperseded() > completes when all awaits resolve with no intervening changes [0.13ms]
+(pass) behavioral async invalidation — isSuperseded() > blocks when rawEstimate exceeds GAS_LIMIT_CAP (returns null from harness) [0.13ms]
+(pass) behavioral async invalidation — isSuperseded() > clamps gasLimit to GAS_LIMIT_CAP when estimate equals cap exactly [0.15ms]
+
+ 60 pass
+ 0 fail
+ 75 expect() calls
+Ran 60 tests across 1 file. [354.00ms]

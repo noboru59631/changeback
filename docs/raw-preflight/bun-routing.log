@@ -1,0 +1,21 @@
+bun test v1.3.14 (0d9b296a)
+
+src/routing.test.ts:
+(pass) shouldShowClose — rendering predicate for StepClose > returns true for Phase.Returning (close() callable once liability=0) [3.64ms]
+(pass) shouldShowClose — rendering predicate for StepClose > returns true for Phase.Closed (vault already closed, show final accounting) [0.16ms]
+(pass) shouldShowClose — rendering predicate for StepClose > returns false for Phase.Collecting [0.05ms]
+(pass) shouldShowClose — rendering predicate for StepClose > returns false for Phase.Active [0.02ms]
+(pass) shouldShowClose — rendering predicate for StepClose > returns false for null (phase not yet loaded) [0.02ms]
+(pass) shouldShowClose — rendering predicate for StepClose > Phase enum values: Collecting=0, Active=1, Returning=2, Closed=3 [0.04ms]
+(pass) shouldShowClose — rendering predicate for StepClose > returns true for numeric 2 (Returning) [0.03ms]
+(pass) shouldShowClose — rendering predicate for StepClose > returns true for numeric 3 (Closed) [0.02ms]
+(pass) shouldShowClose — rendering predicate for StepClose > returns false for numeric 0 (Collecting)
+(pass) shouldShowClose — rendering predicate for StepClose > returns false for numeric 1 (Active) [0.01ms]
+(pass) shouldShowClose — rendering predicate for StepClose > returns false for an unknown future phase value (e.g. 4) [0.02ms]
+(pass) shouldShowClose — rendering predicate for StepClose > returns false for -1 (invalid / sentinel) [0.02ms]
+
+ 12 pass
+ 0 fail
+ 15 expect() calls
+Ran 12 tests across 1 file. [1.52s]
+BUN_ROUTING_EXIT:0

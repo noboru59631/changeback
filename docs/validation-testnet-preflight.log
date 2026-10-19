@@ -1,0 +1,186 @@
+# Testnet Preflight Validation — SUMMARY
+# (This file is a hand-written summary of the preflight run.
+#  Verbatim raw stdout from each command is in docs/raw-preflight/)
+# Date: 2026-10-16
+# Studio project: https://studio.arc.io/app/8fb26e26-3f43-40dc-a940-85228dbbf710
+# All commands run with `set -o pipefail`; exit codes are raw process exits, not shell pipeline exits.
+
+================================================================================
+COMMAND: set -o pipefail && forge test -v
+EXIT:    0
+================================================================================
+
+Suite: contracts/test/ChangeBackVault.t.sol:ChangeBackVaultTest
+Result: ok. 29 passed; 0 failed; 0 skipped; finished in 37.75ms
+
+  [PASS] test_FIX1_closeRevertsInCollecting_ZeroContributions
+  [PASS] test_FIX1_closeRevertsInActive
+  [PASS] test_FIX1_outsiderCannotCloseInCollecting
+  [PASS] test_FIX1_participantCannotCloseInActive
+  [PASS] test_FIX1_zeroContributionVaultCanCloseAfterExpiry
+  [PASS] test_FIX1_normalCloseAfterAllClaims
+  [PASS] test_FIX1_closeRevertsWithOutstandingLiabilities
+  [PASS] test_FIX2_earlyReturnBoundedCostManyProposals
+  [PASS] test_FIX2_pendingPaymentsCannotExecuteAfterEarlyReturn
+  [PASS] test_FIX3_harnessAcceptsMockToken
+  [PASS] test_FIX4_donationBeforeFinalization
+  [PASS] test_FIX4_surplusAfterClose
+  [PASS] test_FIX4_surplusAfterPartialClaims
+  [PASS] test_FIX5_approveRevertsAtExactExpiry
+  [PASS] test_FIX5_earlyReturnRevertsAtExactExpiry
+  [PASS] test_FIX5_executeRevertsAtExactExpiry
+  [PASS] test_FIX5_executeSucceedsOneSecondBeforeExpiry
+  [PASS] test_FIX6_finalizeRevertsWhenUnderfunded
+  [PASS] test_FIX6_invariantAfterFinalize
+  [PASS] test_FIX6_invariantAfterPartialClaims
+  [PASS] test_FIX7_claimForRevertsWhenClosed
+  [PASS] test_FIX7_zeroEntitlementClaimSetsFlag
+  [PASS] test_FIX7_zeroEntitlementDoesNotPreventClose
+  [PASS] test_LIFECYCLE_fullHappyPath
+  [PASS] test_REGRESSION_depositNonParticipant
+  [PASS] test_REGRESSION_doubleDeposit
+  [PASS] test_REGRESSION_feeOnTransferRejected
+  [PASS] test_REGRESSION_pauseGuardianLifecycle
+  [PASS] test_REGRESSION_thresholdBoundary
+
+Suite: contracts/test/ChangeBackVaultFull.t.sol:ChangeBackVaultFullTest
+Result: ok. 56 passed; 0 failed; 0 skipped; finished in 176.27ms
+
+  [PASS] testFuzz_ConservationThreeParticipants (runs: 256)
+  [PASS] testFuzz_ConservationTwoParticipants (runs: 256)
+  [PASS] testFuzz_ConservationWithSpend (runs: 256)
+  [PASS] testFuzz_ThreeWeightsWithSpendRoundingOrderIndependence (runs: 256)
+  [PASS] test_Accounting_InvariantAfterFullCycle
+  [PASS] test_BlockedRecipient_OthersClaimUnimpeded_ThenUnblock
+  [PASS] test_Boundary_DepositAtExactlyCollectUntil_Reverts
+  [PASS] test_Boundary_DepositOneSecondBeforeCollectUntil_Succeeds
+  [PASS] test_Boundary_ExecuteAtExactlySpendUntil_Reverts
+  [PASS] test_Boundary_FinalizeCallableAtExactlySpendUntil
+  [PASS] test_Boundary_FinalizeNotCallableOneSecondBeforeSpendUntil
+  [PASS] test_Boundary_NoLateDeposit_OneSecondAfterCollectUntil
+  [PASS] test_Boundary_Pause24h_ExactlyAt24h_IsReturning
+  [PASS] test_ClaimOrder_AliceBobCarol
+  [PASS] test_ClaimOrder_AliceCarolBob
+  [PASS] test_ClaimOrder_BobAliceCarol
+  [PASS] test_ClaimOrder_BobCarolAlice
+  [PASS] test_ClaimOrder_CarolAliceBob
+  [PASS] test_ClaimOrder_CarolBobAlice
+  [PASS] test_CompetingPaymentsOverspend
+  [PASS] test_Concrete3Member_1_000_001Each_ExactEntitlements  ← NEW
+  [PASS] test_DoublePause_Reverts
+  [PASS] test_DuplicateApproveReverts
+  [PASS] test_DuplicateClaimReverts
+  [PASS] test_DuplicateExecuteReverts
+  [PASS] test_EarlyReturn_GasIndependentOfProposalCount
+  [PASS] test_EarlyReturn_PendingPaymentsGloballyInvalidated
+  [PASS] test_FactoryOnWrongChain_Reverts
+  [PASS] test_FailedPaymentTransfer_RollsBackExecute
+  [PASS] test_Guardian_NonParticipant_RevertsAtConstruction
+  [PASS] test_InvalidConstructor_CollectUntilInPast
+  [PASS] test_InvalidConstructor_DuplicateParticipant
+  [PASS] test_InvalidConstructor_GuardianNotParticipant
+  [PASS] test_InvalidConstructor_SpendUntilBeforeCollectUntil
+  [PASS] test_InvalidConstructor_SpendUntilTooFar
+  [PASS] test_InvalidConstructor_ThresholdTooHigh
+  [PASS] test_InvalidConstructor_ThresholdTooLow
+  [PASS] test_InvalidConstructor_TooFewParticipants
+  [PASS] test_InvalidConstructor_TooManyParticipants
+  [PASS] test_InvalidConstructor_UnsortedParticipants
+  [PASS] test_InvalidConstructor_ZeroParticipant
+  [PASS] test_InvalidConstructor_ZeroToken
+  [PASS] test_NonGuardian_CannotPause
+  [PASS] test_Outsider_CannotDeposit
+  [PASS] test_Outsider_CannotPause
+  [PASS] test_Outsider_CannotPropose_InActivePhase
+  [PASS] test_Outsider_CannotVote_InActivePhase
+  [PASS] test_ProductionVault_RevertsOnWrongChain_HarnessDoesNot
+  [PASS] test_ProposalExpiry_ExecuteRevertsAtExactExpiry
+  [PASS] test_ProposalExpiry_ExecuteSucceedsOneSecondBefore
+  [PASS] test_ReentrantClaim_IsBlocked
+  [PASS] test_ReentrantDeposit_IsBlocked_AccountingUnchanged
+  [PASS] test_ReentrantExecute_IsBlocked
+  [PASS] test_RevokeDropsBelowThreshold_ThenReapprove
+  [PASS] test_SpendAfterClosed_ExecuteReverts_AccountingUnchanged  ← NEW
+  [PASS] test_TwoVaultIsolation
+
+Total: 85 tests passed, 0 failed, 0 skipped (2 suites)
+
+================================================================================
+COMMAND: set -o pipefail && bash scripts/check.sh   (oxlint --type-aware + tsc --noEmit)
+EXIT:    0
+================================================================================
+
+oxlint --type-aware src scripts:  Found 0 warnings and 0 errors.
+oxlint .:                         Found 0 warnings and 0 errors.
+tsc --noEmit:                     (no output = clean)
+
+================================================================================
+COMMAND: set -o pipefail && bun test src/routing.test.ts
+EXIT:    0
+FILE:    src/routing.test.ts
+================================================================================
+
+ 12 pass / 0 fail  (shouldShowClose — rendering predicate for StepClose)
+
+================================================================================
+COMMAND: set -o pipefail && bun test src/components/WriteGate.test.ts
+EXIT:    0
+FILE:    src/components/WriteGate.test.ts
+================================================================================
+
+ 26 pass / 0 fail  (gateReason — no-wallet, wrong-chain, unreviewed-factory, registry states, chain IDs)
+
+================================================================================
+COMMAND: set -o pipefail && bun test src/lib/format.test.ts
+EXIT:    0
+FILE:    src/lib/format.test.ts
+================================================================================
+
+ 41 pass / 0 fail  (parseUsdc valid/invalid, formatUsdc6dp, formatUsdc 2dp)
+
+TypeScript test totals: 79 pass / 0 fail across 3 files
+
+================================================================================
+COMMAND: set -o pipefail && bunx vite build
+EXIT:    0
+================================================================================
+
+✓ built in ~18s
+Warning: chunk size > 500 kB (wagmi + ConnectKit; expected, not an error)
+
+================================================================================
+ARTIFACT SHA256 (no contract changes — contracts not modified this run)
+================================================================================
+
+File:    contracts/out/ChangeBackFactory.sol/ChangeBackFactory.json
+Field:   deployedBytecode.object (raw bytes, not hex text)
+Size:    11850 bytes
+SHA256:  2B93EFF082DB65ED3A9726EAA56A2169408DEC68AA295FA570CCF5A1D9095E42
+
+Receipt data (supplied by user from their RPC; not independently verified by Studio):
+  chain:             0x4cef52 = 5042002 (Arc Testnet)
+  tx status:         0x1 (success)
+  block:             0x406398f
+  gasUsed:           0x2a020c = 2,753,036
+  effectiveGasPrice: 0x4e3b29200 (21 Gwei)
+  runtime size:      11850 bytes
+  SHA256:            2B93EFF082DB65ED3A9726EAA56A2169408DEC68AA295FA570CCF5A1D9095E42
+  MATCH:             YES (artifact deployedBytecode == runtime)
+
+================================================================================
+SUMMARY
+================================================================================
+
+| Command                          | Files / Suites          | Pass | Fail | Exit |
+|----------------------------------|-------------------------|------|------|------|
+| forge test -v (pipefail)         | 2 suites                |  85  |  0   |  0   |
+| bash scripts/check.sh (pipefail) | 31+34 files (lint+tsc)  |  —   |  0   |  0   |
+| bun test routing.test.ts         | 1 file                  |  12  |  0   |  0   |
+| bun test WriteGate.test.ts       | 1 file                  |  26  |  0   |  0   |
+| bun test format.test.ts          | 1 file                  |  41  |  0   |  0   |
+| bunx vite build                  | —                       |  —   |  0   |  0   |
+
+Total runnable tests: 164 pass, 0 fail.
+Factory SHA256: MATCH (artifact == deployed runtime).
+Mainnet: NO-GO (allowlist empty, no approved deployment).
+Testnet: NO-GO pending wallet addresses, stage approvals, allowlist update.

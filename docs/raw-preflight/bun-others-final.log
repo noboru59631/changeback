@@ -1,0 +1,100 @@
+bun test v1.3.14 (0d9b296a)
+
+src/routing.test.ts:
+(pass) shouldShowClose — rendering predicate for StepClose > returns true for Phase.Returning (close() callable once liability=0) [0.80ms]
+(pass) shouldShowClose — rendering predicate for StepClose > returns true for Phase.Closed (vault already closed, show final accounting) [0.04ms]
+(pass) shouldShowClose — rendering predicate for StepClose > returns false for Phase.Collecting [0.01ms]
+(pass) shouldShowClose — rendering predicate for StepClose > returns false for Phase.Active [0.02ms]
+(pass) shouldShowClose — rendering predicate for StepClose > returns false for null (phase not yet loaded) [0.02ms]
+(pass) shouldShowClose — rendering predicate for StepClose > Phase enum values: Collecting=0, Active=1, Returning=2, Closed=3 [0.04ms]
+(pass) shouldShowClose — rendering predicate for StepClose > returns true for numeric 2 (Returning) [0.01ms]
+(pass) shouldShowClose — rendering predicate for StepClose > returns true for numeric 3 (Closed)
+(pass) shouldShowClose — rendering predicate for StepClose > returns false for numeric 0 (Collecting)
+(pass) shouldShowClose — rendering predicate for StepClose > returns false for numeric 1 (Active)
+(pass) shouldShowClose — rendering predicate for StepClose > returns false for an unknown future phase value (e.g. 4) [0.01ms]
+(pass) shouldShowClose — rendering predicate for StepClose > returns false for -1 (invalid / sentinel)
+
+src/lib/format.test.ts:
+(pass) parseUsdc — valid inputs > parses "1" as 1_000_000 [0.13ms]
+(pass) parseUsdc — valid inputs > parses "1.0" as 1_000_000 [0.04ms]
+(pass) parseUsdc — valid inputs > parses "1.5" as 1_500_000 [0.02ms]
+(pass) parseUsdc — valid inputs > parses "0.5" as 500_000 [0.01ms]
+(pass) parseUsdc — valid inputs > parses "0.50" as 500_000 [0.02ms]
+(pass) parseUsdc — valid inputs > parses "0.000001" (1 micro-USDC) [0.02ms]
+(pass) parseUsdc — valid inputs > parses "1.000000" as 1_000_000
+(pass) parseUsdc — valid inputs > parses "100.0" as 100_000_000 [0.01ms]
+(pass) parseUsdc — valid inputs > parses "0" as 0
+(pass) parseUsdc — valid inputs > parses "0.0" as 0 [0.01ms]
+(pass) parseUsdc — valid inputs > parses ".5" (leading-dot) as 500_000 [0.02ms]
+(pass) parseUsdc — valid inputs > parses "1." (trailing-dot) as 1_000_000 [0.02ms]
+(pass) parseUsdc — valid inputs > parses exact 6 dp "1.123456" [0.01ms]
+(pass) parseUsdc — invalid / rejected inputs > rejects negative "-0.5" [0.02ms]
+(pass) parseUsdc — invalid / rejected inputs > rejects negative "-1.5" [0.04ms]
+(pass) parseUsdc — invalid / rejected inputs > rejects negative "-1" [0.02ms]
+(pass) parseUsdc — invalid / rejected inputs > rejects scientific "1e3" [0.01ms]
+(pass) parseUsdc — invalid / rejected inputs > rejects scientific "1E6" [0.01ms]
+(pass) parseUsdc — invalid / rejected inputs > rejects >6dp "1.0000001"
+(pass) parseUsdc — invalid / rejected inputs > rejects multiple dots "1.2.3" [0.02ms]
+(pass) parseUsdc — invalid / rejected inputs > rejects whitespace-only " " [0.03ms]
+(pass) parseUsdc — invalid / rejected inputs > rejects empty string "" [0.01ms]
+(pass) parseUsdc — invalid / rejected inputs > rejects alpha "abc" [0.02ms]
+(pass) parseUsdc — invalid / rejected inputs > rejects "1 000" (space) [0.01ms]
+(pass) parseUsdc — invalid / rejected inputs > rejects leading whitespace " 1"
+(pass) parseUsdc — invalid / rejected inputs > rejects trailing whitespace "1 "
+(pass) parseUsdc — invalid / rejected inputs > rejects "NaN"
+(pass) parseUsdc — invalid / rejected inputs > rejects "Infinity"
+(pass) parseUsdc — invalid / rejected inputs > rejects "+1" (explicit plus)
+(pass) formatUsdc6dp — exact precision > formats 1n as "0.000001" [0.08ms]
+(pass) formatUsdc6dp — exact precision > formats 1_000_000n as "1" [0.02ms]
+(pass) formatUsdc6dp — exact precision > formats 1_500_000n as "1.5" [0.01ms]
+(pass) formatUsdc6dp — exact precision > formats 500_000n as "0.5" [0.01ms]
+(pass) formatUsdc6dp — exact precision > formats 0n as "0"
+(pass) formatUsdc6dp — exact precision > formats 1_234_567n as "1.234567" [0.02ms]
+(pass) formatUsdc6dp — exact precision > strips trailing zeros "1.500000" → "1.5"
+(pass) formatUsdc — 2dp display > formats 1_000_000n as "1.00" [0.04ms]
+(pass) formatUsdc — 2dp display > formats 500_000n as "0.50" [0.01ms]
+(pass) formatUsdc — 2dp display > formats 1n as "0.00" (truncates sub-cent) [0.01ms]
+(pass) formatUsdc — 2dp display > formats 10_000n as "0.01" [0.01ms]
+(pass) formatUsdc — 2dp display > formats 0n as "0.00" [0.01ms]
+
+src/components/WriteGate.test.ts:
+(pass) gateReason — no wallet > returns no-wallet when isConnected=false regardless of other params [0.10ms]
+(pass) gateReason — no wallet > returns no-wallet even when walletChainId is set but isConnected=false [0.03ms]
+(pass) gateReason — wrong chain > returns wrong-chain when wallet is on Ethereum mainnet (1) but selected is Arc Testnet [0.01ms]
+(pass) gateReason — wrong chain > returns wrong-chain when wallet is on Arc Testnet but selected is Arc Mainnet [0.02ms]
+(pass) gateReason — wrong chain > returns wrong-chain when wallet is on Arc Mainnet but selected is Arc Testnet [0.02ms]
+(pass) gateReason — wrong chain > returns wrong-chain when walletChainId is undefined but isConnected=true [0.02ms]
+(pass) gateReason — unreviewed factory (Arc Testnet) > returns unreviewed-factory when factoryAddress is undefined [0.01ms]
+(pass) gateReason — unreviewed factory (Arc Testnet) > returns unreviewed-factory when factoryAddress is empty string [0.01ms]
+(pass) gateReason — unreviewed factory (Arc Testnet) > returns unreviewed-factory for a plausible-looking address not in allowlist [0.14ms]
+(pass) gateReason — unreviewed factory (Arc Testnet) > returns unreviewed-factory even when isVaultRegistered=true (allowlist takes precedence) [0.04ms]
+(pass) gateReason — unreviewed factory (Arc Testnet) > returns unreviewed-factory even when registry is loading [0.03ms]
+(pass) gateReason — unreviewed factory (Arc Mainnet) > returns unreviewed-factory on mainnet for an address not in allowlist [0.03ms]
+(pass) gateReason — unreviewed factory (Arc Mainnet) > returns unreviewed-factory on mainnet even with isVault=true [0.01ms]
+(pass) gateReason — unreviewed factory (Arc Mainnet) > REVIEWED_FACTORY_ADDRESSES[mainnet] is empty (no mainnet deployment approved) [0.03ms]
+(pass) gateReason — unreviewed factory (Arc Mainnet) > REVIEWED_FACTORY_ADDRESSES[testnet] contains exactly the deployed factory address [0.03ms]
+(pass) gateReason — registry state ordering (allowlist-first guard) > unreviewed-factory is returned before registry-loading when factory is NOT in allowlist [0.02ms]
+(pass) gateReason — registry state ordering (allowlist-first guard) > unreviewed-factory is returned before registry-error when factory is NOT in allowlist [0.02ms]
+(pass) gateReason — registry state ordering (allowlist-first guard) > unreviewed-factory is returned before vault-not-registered when factory is NOT in allowlist [0.02ms]
+(pass) gateReason — registry state ordering (allowlist-first guard) > returns registry-loading when reviewed factory + vault + registry still loading [0.02ms]
+(pass) gateReason — registry state ordering (allowlist-first guard) > returns registry-error when reviewed factory + vault + registry errored [0.02ms]
+(pass) gateReason — registry state ordering (allowlist-first guard) > returns vault-not-registered when reviewed factory + vault + registry returns false [0.02ms]
+(pass) gateReason — no vault address (StepCreate path) > returns unreviewed-factory (not registry states) when no vault address given [0.02ms]
+(pass) gateReason — no vault address (StepCreate path) > returns ok for reviewed factory with no vault address (StepCreate path) [0.01ms]
+(pass) gateReason — no vault address (StepCreate path) > returns ok for reviewed factory address in upper-case (case-insensitive match) [0.01ms]
+(pass) gateReason — argument precedence > wrong-chain is returned before unreviewed-factory [0.02ms]
+(pass) gateReason — argument precedence > no-wallet is returned before wrong-chain [0.03ms]
+(pass) gateReason — chain ID exact match > chain 5042002 matches itself (Arc Testnet)
+(pass) gateReason — chain ID exact match > chain 5042 matches itself (Arc Mainnet)
+(pass) gateReason — chain ID exact match > 5042 and 5042002 are different chains (not off-by-one) [0.01ms]
+(pass) gateReason — chain ID exact match > wallet on Arc Testnet is wrong-chain for selected Arc Mainnet [0.01ms]
+(pass) gateReason — full ok path (reviewed factory + registered vault) > returns ok: reviewed factory + registered vault + wallet on correct chain [0.02ms]
+(pass) gateReason — full ok path (reviewed factory + registered vault) > returns ok with upper-case reviewed factory address (case-insensitive) [0.01ms]
+(pass) gateReason — full ok path (reviewed factory + registered vault) > mainnet reviewed factory (empty) still returns unreviewed-factory on mainnet [0.02ms]
+(pass) gateReason — full ok path (reviewed factory + registered vault) > mainnet allowlist remains empty regardless of testnet approval [0.01ms]
+(pass) gateReason — full ok path (reviewed factory + registered vault) > testnet allowlist has exactly one entry after deployment approval [0.01ms]
+
+ 88 pass
+ 0 fail
+ 97 expect() calls
+Ran 88 tests across 3 files. [806.00ms]

@@ -1,0 +1,248 @@
+[
+  {
+    "Path": "package.json",
+    "Match": true,
+    "StudioHash": "7226475eff7d87fb23c78453e4a5fc2a1c29a122aa8090d9c9f7b97698439079",
+    "ReleaseHash": "7226475eff7d87fb23c78453e4a5fc2a1c29a122aa8090d9c9f7b97698439079"
+  },
+  {
+    "Path": "bun.lock",
+    "Match": true,
+    "StudioHash": "308c8831c6e1efc13fe0194bdce22b4f4a15dc6614c4a7c21252dcf0d2d38ace",
+    "ReleaseHash": "308c8831c6e1efc13fe0194bdce22b4f4a15dc6614c4a7c21252dcf0d2d38ace"
+  },
+  {
+    "Path": "vite.config.ts",
+    "Match": true,
+    "StudioHash": "58bfc87c2e88182c01c24d362e85ff51b9cfed76bf16d274a821df623bb68ae2",
+    "ReleaseHash": "58bfc87c2e88182c01c24d362e85ff51b9cfed76bf16d274a821df623bb68ae2"
+  },
+  {
+    "Path": "tsconfig.json",
+    "Match": true,
+    "StudioHash": "4e42581c6a1b6e3398636ebc69fd77a14c02b8fc227393e7fd0e980572d90450",
+    "ReleaseHash": "4e42581c6a1b6e3398636ebc69fd77a14c02b8fc227393e7fd0e980572d90450"
+  },
+  {
+    "Path": "foundry.toml",
+    "Match": true,
+    "StudioHash": "2deb4217c39b7b62fbc9f9c844bea76b9b00f1a48cb422f174bf80e6ba155b10",
+    "ReleaseHash": "2deb4217c39b7b62fbc9f9c844bea76b9b00f1a48cb422f174bf80e6ba155b10"
+  },
+  {
+    "Path": "remappings.txt",
+    "Match": true,
+    "StudioHash": "7db29ab99ec9f13cfd2dc2c9c746f77e57f85c17c6186a15204e1dfdcfadd29c",
+    "ReleaseHash": "7db29ab99ec9f13cfd2dc2c9c746f77e57f85c17c6186a15204e1dfdcfadd29c"
+  },
+  {
+    "Path": "src/App.tsx",
+    "Match": true,
+    "StudioHash": "3bd655b5cdca8c224dc66aae89940cf598306b7477ad37f1c21b2198f7411a25",
+    "ReleaseHash": "3bd655b5cdca8c224dc66aae89940cf598306b7477ad37f1c21b2198f7411a25"
+  },
+  {
+    "Path": "src/config.ts",
+    "Match": true,
+    "StudioHash": "d4c853961708f3d616cdef24fa658580820919636aa0580219439147cf4d4bbc",
+    "ReleaseHash": "d4c853961708f3d616cdef24fa658580820919636aa0580219439147cf4d4bbc"
+  },
+  {
+    "Path": "src/console-capture.ts",
+    "Match": true,
+    "StudioHash": "ab682e27bfb8efb8b1084ab91ff604baee9b2128892a8036dc0584d82733d3ce",
+    "ReleaseHash": "ab682e27bfb8efb8b1084ab91ff604baee9b2128892a8036dc0584d82733d3ce"
+  },
+  {
+    "Path": "src/index.css",
+    "Match": true,
+    "StudioHash": "7b91475d7bf624dc71cb2721f52df36b382913523f67a7677ab2d42a220e5039",
+    "ReleaseHash": "7b91475d7bf624dc71cb2721f52df36b382913523f67a7677ab2d42a220e5039"
+  },
+  {
+    "Path": "src/main.tsx",
+    "Match": true,
+    "StudioHash": "a0ab75e5c47174ac3a52c5ed986f58ecae43295457b842ea2ca51d86eb688563",
+    "ReleaseHash": "a0ab75e5c47174ac3a52c5ed986f58ecae43295457b842ea2ca51d86eb688563"
+  },
+  {
+    "Path": "src/onchain-facts.ts",
+    "Match": true,
+    "StudioHash": "c7c314ada2f6be684dcd24c703fee3fec68f8bc0a2c7c9d1bcf3633c33199abd",
+    "ReleaseHash": "c7c314ada2f6be684dcd24c703fee3fec68f8bc0a2c7c9d1bcf3633c33199abd"
+  },
+  {
+    "Path": "src/onchain-money.ts",
+    "Match": true,
+    "StudioHash": "1ac379552459f345f429d85b6d3f9f5f052be0c62ab630c6b111ea6f7a78af4f",
+    "ReleaseHash": "1ac379552459f345f429d85b6d3f9f5f052be0c62ab630c6b111ea6f7a78af4f"
+  },
+  {
+    "Path": "src/onchain-wait.ts",
+    "Match": true,
+    "StudioHash": "e6b89dcf266213adea50cd35dd761aa8adfc4fb121dd90c702fb635d98bb1577",
+    "ReleaseHash": "e6b89dcf266213adea50cd35dd761aa8adfc4fb121dd90c702fb635d98bb1577"
+  },
+  {
+    "Path": "src/routing.test.ts",
+    "Match": true,
+    "StudioHash": "96d2570c3cf5c26c3730048d8818448dc35f13e813c10e997731938c1604322b",
+    "ReleaseHash": "96d2570c3cf5c26c3730048d8818448dc35f13e813c10e997731938c1604322b"
+  },
+  {
+    "Path": "src/tracing.ts",
+    "Match": true,
+    "StudioHash": "3ed5452d5abd6057c818e3362be325c3f1566523927e496e49e0eaf1bafd64b8",
+    "ReleaseHash": "3ed5452d5abd6057c818e3362be325c3f1566523927e496e49e0eaf1bafd64b8"
+  },
+  {
+    "Path": "src/vite-env.d.ts",
+    "Match": true,
+    "StudioHash": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5",
+    "ReleaseHash": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5"
+  },
+  {
+    "Path": "src/components/DemoView.tsx",
+    "Match": true,
+    "StudioHash": "7cfa48d225a7419a3970c63ff7a76c2255eef39cee8ebdaf19e6e390b9338f3f",
+    "ReleaseHash": "7cfa48d225a7419a3970c63ff7a76c2255eef39cee8ebdaf19e6e390b9338f3f"
+  },
+  {
+    "Path": "src/components/StepApproveSpend.tsx",
+    "Match": true,
+    "StudioHash": "5e30ef3e971c197ec0154a350aba126f1b778d2fdbe9dd73b7cec8c40ec955a8",
+    "ReleaseHash": "5e30ef3e971c197ec0154a350aba126f1b778d2fdbe9dd73b7cec8c40ec955a8"
+  },
+  {
+    "Path": "src/components/StepClose.tsx",
+    "Match": true,
+    "StudioHash": "8f6ab18668ecb8ffe50aaf50dc4a784bb1348de270e1d35b2fad6a24b07e821a",
+    "ReleaseHash": "8f6ab18668ecb8ffe50aaf50dc4a784bb1348de270e1d35b2fad6a24b07e821a"
+  },
+  {
+    "Path": "src/components/StepCollect.tsx",
+    "Match": true,
+    "StudioHash": "780382c47f86af1923a5eb49ed2b27c1c950612b7cf0c149df6733ce1c4aa886",
+    "ReleaseHash": "780382c47f86af1923a5eb49ed2b27c1c950612b7cf0c149df6733ce1c4aa886"
+  },
+  {
+    "Path": "src/components/StepCreate.test.ts",
+    "Match": true,
+    "StudioHash": "ef5a2948e678d98697fbab8b85a2861fec29a70fee44c938ac3cc636776f16a8",
+    "ReleaseHash": "ef5a2948e678d98697fbab8b85a2861fec29a70fee44c938ac3cc636776f16a8"
+  },
+  {
+    "Path": "src/components/StepCreate.tsx",
+    "Match": true,
+    "StudioHash": "70018b236ccc65f231dc10f90ce39c0f6b84e77bf2d1b90249526822c9586e8c",
+    "ReleaseHash": "70018b236ccc65f231dc10f90ce39c0f6b84e77bf2d1b90249526822c9586e8c"
+  },
+  {
+    "Path": "src/components/StepRail.tsx",
+    "Match": true,
+    "StudioHash": "1bdb4c1a8d88b3e2df747af230b5ce466d84ee9bc04db13d9164dfd4850b510c",
+    "ReleaseHash": "1bdb4c1a8d88b3e2df747af230b5ce466d84ee9bc04db13d9164dfd4850b510c"
+  },
+  {
+    "Path": "src/components/StepReturn.tsx",
+    "Match": true,
+    "StudioHash": "24fe0b5e3c43e00d377cebb6de69051262f63c0fccbaa4f9bbf5fa54ba7d8acf",
+    "ReleaseHash": "24fe0b5e3c43e00d377cebb6de69051262f63c0fccbaa4f9bbf5fa54ba7d8acf"
+  },
+  {
+    "Path": "src/components/TxButton.tsx",
+    "Match": true,
+    "StudioHash": "08a3b5a44c810017e8f6a057800edad49679d6b3df4fb26d805746a9d6d19834",
+    "ReleaseHash": "08a3b5a44c810017e8f6a057800edad49679d6b3df4fb26d805746a9d6d19834"
+  },
+  {
+    "Path": "src/components/VaultCard.tsx",
+    "Match": true,
+    "StudioHash": "b2ea8b71e8df1dc15bbba6ae20277988d3885beff0d38b767ed98e94af8d83bc",
+    "ReleaseHash": "b2ea8b71e8df1dc15bbba6ae20277988d3885beff0d38b767ed98e94af8d83bc"
+  },
+  {
+    "Path": "src/components/WriteGate.test.ts",
+    "Match": true,
+    "StudioHash": "d6df1e554a03338396bb12ba7da2e98cf36c536eb77cf2c90981a733af6a9963",
+    "ReleaseHash": "d6df1e554a03338396bb12ba7da2e98cf36c536eb77cf2c90981a733af6a9963"
+  },
+  {
+    "Path": "src/components/WriteGate.tsx",
+    "Match": true,
+    "StudioHash": "2508977d9ace2f74a41e687f726ffc501bcd24bffc78e43a69681ce574e16d81",
+    "ReleaseHash": "2508977d9ace2f74a41e687f726ffc501bcd24bffc78e43a69681ce574e16d81"
+  },
+  {
+    "Path": "src/lib/abi.ts",
+    "Match": true,
+    "StudioHash": "693841ec713aa5b7f7dbfc5642d96507f9ae6ebe4d69c13076330a9a57c1a46d",
+    "ReleaseHash": "693841ec713aa5b7f7dbfc5642d96507f9ae6ebe4d69c13076330a9a57c1a46d"
+  },
+  {
+    "Path": "src/lib/approval-preflight.ts",
+    "Match": true,
+    "StudioHash": "4d03d4eabd07f29333972b2bda6a18c2e80eb205ea1237be07415896f46fce19",
+    "ReleaseHash": "4d03d4eabd07f29333972b2bda6a18c2e80eb205ea1237be07415896f46fce19"
+  },
+  {
+    "Path": "src/lib/constants.ts",
+    "Match": true,
+    "StudioHash": "6b8d5330a9b02bc62d35541c733dcd3c1ac906a025c64066569ad9a55ec0a2cc",
+    "ReleaseHash": "6b8d5330a9b02bc62d35541c733dcd3c1ac906a025c64066569ad9a55ec0a2cc"
+  },
+  {
+    "Path": "src/lib/errors.ts",
+    "Match": true,
+    "StudioHash": "b18e5c1671f967a70f28270ffd4901b2c296d83cb130df4ab6992ba727ab8a89",
+    "ReleaseHash": "b18e5c1671f967a70f28270ffd4901b2c296d83cb130df4ab6992ba727ab8a89"
+  },
+  {
+    "Path": "src/lib/format.test.ts",
+    "Match": true,
+    "StudioHash": "e23b2cbca63668690239e6e0413c9568b4963231523e88f7617b8a3b4828b1f3",
+    "ReleaseHash": "e23b2cbca63668690239e6e0413c9568b4963231523e88f7617b8a3b4828b1f3"
+  },
+  {
+    "Path": "src/lib/format.ts",
+    "Match": true,
+    "StudioHash": "b3133e04c5c63d5ddcaf4debde5db8c2ce6e3ec0b8e7db41492e6c04c5cd66ff",
+    "ReleaseHash": "b3133e04c5c63d5ddcaf4debde5db8c2ce6e3ec0b8e7db41492e6c04c5cd66ff"
+  },
+  {
+    "Path": "src/lib/mainnet-preflight.test.ts",
+    "Match": true,
+    "StudioHash": "8e0a2d7fd7d22de4f55a1587a719f7abfe13a1a8152bddb54159eeac95af41ca",
+    "ReleaseHash": "8e0a2d7fd7d22de4f55a1587a719f7abfe13a1a8152bddb54159eeac95af41ca"
+  },
+  {
+    "Path": "src/lib/payment-preflight.test.ts",
+    "Match": true,
+    "StudioHash": "5c16b2a2a55f2e3df9f44334bed90b67634f80e10aa4f3ffc023a558089a7a25",
+    "ReleaseHash": "5c16b2a2a55f2e3df9f44334bed90b67634f80e10aa4f3ffc023a558089a7a25"
+  },
+  {
+    "Path": "src/lib/payment-preflight.ts",
+    "Match": true,
+    "StudioHash": "9f799636e9fae20d98f5a2d765c1ce4587a3826c904f2123e35518513b04b876",
+    "ReleaseHash": "9f799636e9fae20d98f5a2d765c1ce4587a3826c904f2123e35518513b04b876"
+  },
+  {
+    "Path": "contracts/ChangeBackFactory.sol",
+    "Match": true,
+    "StudioHash": "f12e8ec60d9d479c84698f774604e6a6f1aebf5d3c76a15ba9991926ee10fbcf",
+    "ReleaseHash": "f12e8ec60d9d479c84698f774604e6a6f1aebf5d3c76a15ba9991926ee10fbcf"
+  },
+  {
+    "Path": "contracts/ChangeBackVault.sol",
+    "Match": true,
+    "StudioHash": "9106dcb1809e652c96d358f48bf7c3d54a32261b86564719e902641aae8d64eb",
+    "ReleaseHash": "9106dcb1809e652c96d358f48bf7c3d54a32261b86564719e902641aae8d64eb"
+  },
+  {
+    "Path": "contracts/ChangeBackVaultBase.sol",
+    "Match": true,
+    "StudioHash": "0f4180135b0ba97d9f9593b8457bfdfff60714e343e8f7f71207513ce071a706",
+    "ReleaseHash": "0f4180135b0ba97d9f9593b8457bfdfff60714e343e8f7f71207513ce071a706"
+  }
+]
