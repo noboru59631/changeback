@@ -6,7 +6,7 @@ import { prepareApproval, prepareExecution, prepareEarlyReturn, prepareEarlyRetu
 import type { PaymentPreflight } from '@/lib/payment-preflight'
 import { VAULT_ABI } from '@/lib/abi'
 import { CHAIN_CONFIG } from '@/lib/constants'
-import { formatUsdc, shortenAddress, formatTs } from '@/lib/format'
+import { formatUsdc, formatUsdc6dp, formatTs } from '@/lib/format'
 import { useWriteAllowed } from './WriteGate'
 import { parseOnchainError } from '@/lib/errors'
 import { buildTxExplorerUrl } from '@/onchain-facts'
@@ -49,6 +49,9 @@ export function StepApproveSpend({
   const [preflightError, setPreflightError] = useState('')
   const chainConfig = CHAIN_CONFIG[selectedChainId]
   const [tab, setTab] = useState<'proposals' | 'propose' | 'early'>('proposals')
+  const [reviewedProposal, setReviewedProposal] = useState('')
+  const currentProposalReview = useRef(reviewedProposal)
+  currentProposalReview.current = reviewedProposal
 
   const [destAddr,    setDestAddr]    = useState('')
   const [amountStr,   setAmountStr]   = useState('')
@@ -139,13 +142,15 @@ export function StepApproveSpend({
     if (preparingApproval || isPending || isConfirming) return
     let approvalFees: Awaited<ReturnType<typeof prepareApproval>> | undefined
     if (['approve', 'execute', 'executeEarlyReturn'].includes(functionName)) {
+      const reviewAtStart = currentProposalReview.current
+      if (!reviewAtStart.startsWith(`${scope}:${args[0]}:`)) { toast.error('Review this proposal first.'); return }
       if (!publicClient || !address) { toast.error('Connect the participant wallet first.'); return }
       setPreparingApproval(true)
       try {
         const prepareAction = functionName === 'approve' ? prepareApproval :
           functionName === 'execute' ? prepareExecution : prepareEarlyReturnExecution
         approvalFees = await prepareAction(publicClient, address, vaultAddress, args[0] as bigint, selectedChainId)
-        if (currentScope.current !== scope) { toast.error('Wallet or vault changed. Check again.'); return }
+        if (currentScope.current !== scope || currentProposalReview.current !== reviewAtStart) { toast.error('Wallet, vault or review changed. Check again.'); return }
       } catch (error) {
         toast.error(parseOnchainError(error))
         return
@@ -289,6 +294,8 @@ export function StepApproveSpend({
             const expired    = Number(expiresAt) <= nowSec
             const canExecute = !executed && !cancelled && !expired && Number(approvalCount) >= threshold
             const isInvalid  = executed || cancelled || expired
+            const reviewKey = `${scope}:${id}:${dest}:${amt}:${expiresAt}:${approvalCount}:${threshold}`
+            const reviewed = reviewedProposal === reviewKey
 
             return (
               <div key={id} className={`rounded-xl border px-4 py-3 text-sm space-y-2 ${
@@ -310,12 +317,14 @@ export function StepApproveSpend({
 
                 {isPayment && (
                   <div className="text-xs text-slate-500 space-y-0.5">
-                    <div>To: <span className="font-mono text-slate-700">{shortenAddress(dest)}</span></div>
-                    <div>Amount: <span className="font-semibold text-slate-800">${formatUsdc(amt)} USDC</span></div>
+                    <div>To: <span className="font-mono text-slate-700 break-all">{dest}</span></div>
+                    <div>Amount: <span className="font-semibold text-slate-800">${formatUsdc6dp(amt)} USDC</span></div>
                   </div>
                 )}
 
                 <div className="text-xs text-slate-500">Expires: {formatTs(expiresAt)}</div>
+
+                {!isInvalid && writeAllowed && <label className="flex items-start gap-2 text-xs text-slate-600"><input type="checkbox" checked={reviewed} onChange={event => setReviewedProposal(event.target.checked ? reviewKey : '')} />I checked {chainConfig?.label}, proposal #{id}, {isPayment ? 'the full recipient and exact amount' : 'ending all spending and starting refunds'}, and expiry. Approval does not execute it. Each action has a separate network fee; review the maximum in the wallet.</label>}
 
                 {!isInvalid && writeAllowed && isParticipant && (
                   <div className="flex gap-2 flex-wrap pt-1">
@@ -324,6 +333,7 @@ export function StepApproveSpend({
                         onClick={() => sendTx('approve', [BigInt(id)])}
                         pending={isPending || preparingApproval} confirming={isConfirming}
                         label="Approve" variant="ghost" className="text-xs py-1.5 px-3"
+                        disabled={!reviewed}
                       />
                     )}
                     {hasVoted && (
@@ -338,6 +348,7 @@ export function StepApproveSpend({
                         onClick={() => sendTx(isPayment ? 'execute' : 'executeEarlyReturn', [BigInt(id)])}
                         pending={isPending} confirming={isConfirming}
                         label={isPayment ? 'Execute Payment' : 'Execute Early Return'}
+                        disabled={!reviewed}
                         className="text-xs py-1.5 px-3"
                       />
                     )}
@@ -350,6 +361,7 @@ export function StepApproveSpend({
                       onClick={() => sendTx(isPayment ? 'execute' : 'executeEarlyReturn', [BigInt(id)])}
                       pending={isPending} confirming={isConfirming}
                       label={isPayment ? 'Execute Payment' : 'Execute Early Return'}
+                      disabled={!reviewed}
                       className="text-xs py-1.5 px-3"
                     />
                   </div>

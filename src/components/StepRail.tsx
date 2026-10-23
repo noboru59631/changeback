@@ -11,7 +11,7 @@ interface Props {
  */
 export function StepRail({ activeStep }: Props) {
   return (
-    <div className="flex items-center gap-0 overflow-x-auto pb-1">
+    <div className="flex items-center gap-0 overflow-x-auto pb-1" aria-label="Lifecycle position, not proof of completed transactions">
       {STEP_LABELS.map((label, idx) => {
         const done = idx < activeStep
         const active = idx === activeStep
@@ -21,19 +21,13 @@ export function StepRail({ activeStep }: Props) {
               <div
                 className={clsx(
                   'w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-colors',
-                  done && 'bg-emerald-500 text-white',
+                  done && 'bg-slate-200 text-slate-600',
                   active && 'bg-navy-900 text-white ring-2 ring-navy-900 ring-offset-2',
                   !done && !active && 'bg-slate-200 text-slate-500',
                 )}
                 style={active ? { backgroundColor: '#0f172a' } : undefined}
               >
-                {done ? (
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                ) : (
-                  idx + 1
-                )}
+                {idx + 1}
               </div>
               <span
                 className={clsx(

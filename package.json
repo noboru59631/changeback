@@ -10,6 +10,7 @@
     "fetch:abi": "bun run ./scripts/fetch-abi.ts",
     "lint": "oxlint --type-aware src scripts --fix; s=$?; oxlint --fix .; exit $((s>0?s:$?))",
     "typecheck": "tsc --noEmit",
+    "typecheck:app": "tsc --noEmit -p tsconfig.app.json",
     "check": "bash scripts/check.sh",
     "contracts:build": "forge build",
     "contracts:test": "forge test"
