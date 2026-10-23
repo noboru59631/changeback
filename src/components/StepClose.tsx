@@ -3,7 +3,7 @@ import { useAccount, usePublicClient, useReadContracts, useWriteContract, useWai
 import { prepareClose } from '@/lib/approval-preflight'
 import { VAULT_ABI } from '@/lib/abi'
 import { formatUsdc6dp } from '@/lib/format'
-import { useWriteAllowed } from './WriteGate'
+import { useWriteAllowed, WriteGate } from './WriteGate'
 import { parseOnchainError } from '@/lib/errors'
 import { buildTxExplorerUrl } from '@/onchain-facts'
 import { TxButton } from './TxButton'
@@ -143,10 +143,8 @@ export function StepClose({
         <p className="text-xs text-slate-500">Close network fee limit: 0.001931 test USDC. Verify the wallet keeps this limit.</p>
       )}
 
-      {!writeAllowed && (
-        <div className="rounded-xl bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-700">
-          Writes disabled — factory not in reviewed allowlist. Reads are available.
-        </div>
+      {!writeAllowed && !isClosed && (
+        <WriteGate selectedChainId={selectedChainId} factoryAddress={factoryAddress} vaultAddress={vaultAddress} isVaultRegistered={isVaultRegistered} isVaultRegisteredLoading={isVaultRegisteredLoading} isVaultRegisteredError={isVaultRegisteredError}>{null}</WriteGate>
       )}
 
       {/* Final accounting — always visible without a wallet */}

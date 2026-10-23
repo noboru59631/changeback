@@ -25,7 +25,7 @@ import { Phase, isReviewedFactory, ARC_TESTNET_CHAIN_ID, ARC_MAINNET_CHAIN_ID } 
 // itself; this block is the only one that catches a hardcoded-false regression
 // in the JSX prop.
 describe('App.tsx source wiring — detects hardcoded isReviewedFactory={false} regression', () => {
-  const src = readFileSync(new URL('./App.tsx', import.meta.url).pathname, 'utf8')
+  const src = readFileSync(new URL('./App.tsx', import.meta.url), 'utf8')
 
   it('derives factoryIsReviewed from the allowlist — derivation expression present', () => {
     // Must contain: factoryIsReviewed = factoryValid && isReviewedFactory(

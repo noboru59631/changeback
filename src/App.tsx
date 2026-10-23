@@ -37,6 +37,7 @@
  */
 
 import { useState } from 'react'
+import { GettingStarted } from './components/GettingStarted'
 import { useAccount, useReadContract } from 'wagmi'
 import { ConnectKitButton } from 'connectkit'
 import { useSwitchChain } from 'wagmi'
@@ -45,6 +46,7 @@ import {
   ARC_TESTNET_CHAIN_ID,
   ARC_MAINNET_CHAIN_ID,
   SUPPORTED_CHAIN_IDS,
+  REVIEWED_FACTORY_ADDRESSES,
   CHAIN_CONFIG,
   Phase,
   isReviewedFactory,
@@ -121,7 +123,7 @@ export default function App() {
   const [showDemo,   setShowDemo]   = useState(false)
 
   // ── Vault phase (live read — no wallet required) ──────────────────────────
-  const { data: phaseData } = useReadContract({
+  const { data: phaseData, isError: phaseError, refetch: refetchPhase } = useReadContract({
     address: isValidAddress(vaultAddr) ? vaultAddr : undefined,
     abi: VAULT_ABI,
     functionName: 'getPhase',
@@ -179,12 +181,13 @@ export default function App() {
               ChangeBack
             </span>
             <span className="text-xs text-slate-400 hidden sm:inline">
-              · {selectedChainConfig.label}
+              · {showDemo ? 'Simulation' : selectedChainConfig.label}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowDemo(s => !s)}
+              aria-label={showDemo ? 'Exit simulation' : 'Simulation'}
               className={`p-2 rounded-lg text-sm transition-colors flex items-center gap-1 ${
                 showDemo
                   ? 'bg-violet-100 text-violet-600'
@@ -193,7 +196,7 @@ export default function App() {
               title="Toggle demo view"
             >
               <Eye size={14} />
-              <span className="text-xs hidden sm:inline">Demo</span>
+              <span className="text-xs hidden sm:inline">{showDemo ? 'Exit simulation' : 'Simulation'}</span>
             </button>
             <button
               onClick={() => setShowConfig(s => !s)}
@@ -202,15 +205,16 @@ export default function App() {
             >
               <Settings size={16} />
             </button>
-            <ConnectKitButton />
+            {!showDemo && <ConnectKitButton />}
           </div>
         </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-5 pb-20">
+        <GettingStarted simulation={showDemo} mainnet={onMainnet} connected={isConnected} onSimulate={() => setShowDemo(true)} />
 
         {/* Mainnet info banner — informational ONLY; does not gate writes */}
-        {onMainnet && !mainnetAcknowledged && (
+        {onMainnet && !showDemo && !mainnetAcknowledged && (
           <div className="rounded-2xl bg-red-50 border border-red-200 px-4 py-4 text-sm text-red-700">
             <div className="font-semibold mb-1">Arc Mainnet — real funds</div>
             <p className="text-xs leading-relaxed mb-3">
@@ -235,8 +239,7 @@ export default function App() {
               <div>
                 <strong className="font-semibold">No factory address configured.</strong>
                 <p className="mt-1 text-xs leading-relaxed">
-                  ChangeBack contracts have not been deployed yet. Deployment requires explicit
-                  approval. Once deployed, paste the factory address in the settings panel.
+                  Open a shared vault link, or select a reviewed factory in settings.
                   Vault reads are available to anyone with a share link — no wallet required.
                 </p>
                 <button
@@ -282,12 +285,14 @@ export default function App() {
             </div>
 
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Factory address</label>
+              <label className="block text-xs text-slate-500 mb-1" htmlFor="factory-address">Factory address</label>
               <input
+                id="factory-address"
                 type="text" placeholder="0x…"
                 value={factoryAddr} onChange={e => setFactoryAddr(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-slate-400"
               />
+              <button className="mt-2 text-xs underline text-blue-700" onClick={() => setFactoryAddr(REVIEWED_FACTORY_ADDRESSES[selectedChainId]?.[0] ?? '')}>Use reviewed {selectedChainConfig.label} factory</button>
               {factoryValid && !factoryIsReviewed && (
                 <div className="mt-1.5 flex items-start gap-1.5 text-xs text-red-600">
                   <ShieldOff size={11} className="shrink-0 mt-0.5" />
@@ -307,8 +312,9 @@ export default function App() {
             </div>
 
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Vault address (load existing vault)</label>
+              <label className="block text-xs text-slate-500 mb-1" htmlFor="vault-address">Vault address (load existing vault)</label>
               <input
+                id="vault-address"
                 type="text" placeholder="0x…"
                 value={vaultAddr} onChange={e => setVaultAddr(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-slate-400"
@@ -388,6 +394,7 @@ export default function App() {
             {(vaultValid || factoryValid) && (
               <div className="overflow-x-auto">
                 <StepRail activeStep={vaultValid ? activeStep : 0} />
+                <p className="mt-2 text-xs text-slate-500">Lifecycle position only. A later phase does not prove that a payment occurred; check the amounts and Explorer records.</p>
               </div>
             )}
 
@@ -463,8 +470,8 @@ export default function App() {
               )}
 
               {vaultValid && phase === null && (
-                <div className="py-8 text-center text-sm text-slate-400 animate-pulse">
-                  Loading vault…
+                <div role="status" className="py-8 text-center text-sm text-slate-600">
+                  {phaseError ? <>Could not load this vault on {selectedChainConfig.label}. Check the address and network. <button className="underline" onClick={() => void refetchPhase()}>Retry</button></> : 'Loading vault…'}
                 </div>
               )}
             </div>

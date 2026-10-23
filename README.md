@@ -2,6 +2,14 @@
 
 A time-bounded shared USDC budget built in Arc Studio. Participants collect funds, approve payments by quorum, and return unspent funds to contributors before closing the vault.
 
+## November readiness work — review branch
+
+The next product scenario is a **meetup or small team budget**: three contributors, 2-of-3 approval, a venue payment, proportional return of the remainder, and closure. The review branch adds a wallet-free guided simulation, onboarding and refund rules, exact payment review, honest lifecycle progress, Explorer evidence, and a cumulative Mainnet deposit check. These changes are not yet synchronized to Studio or deployed to the public app.
+
+The Mainnet interface limit is **0.10 USDC total contributions**, checked from fresh chain reads before both token approval and deposit. It is a client-side safeguard, **not an onchain cap**: simultaneous transactions or other clients can bypass it. Existing contracts remain unchanged. A contract-enforced cap or direct-transfer recovery would require a separately approved contract version and deployment.
+
+See [the readiness review and verification results](docs/readiness-2026-10-23.md), [the proposed small-amount Mainnet runbook](docs/mainnet-meetup-runbook.md), and [the updated submission draft](docs/submission-update-2026-10-23.md). No new Mainnet payment is claimed.
+
 **Release status (2026-10-20): Arc Mainnet deposit, quorum-approved early return, full refund and vault closure completed; walkthrough video published.** A total of **0.27 USDC (0.09 × 3)** was deposited, early return was executed after **2-of-3 approval**, and the full **0.27 USDC** was refunded to the contributor. The vault is **Closed**, with zero token balance, outstanding refund liability and remaining contributor-to-vault USDC allowance. Total gas across **14 actual transactions: 0.136070774 USDC**, including Factory deployment.
 
 **No recipient payment was executed on Mainnet.** Deposits exceeded the originally approved **0.10 USDC principal limit**, so the payment demonstration was stopped and recovery prioritized. The **0.03 USDC recipient payment belongs to the separate Testnet demonstration**. This Mainnet result demonstrates the deposit/early-return/refund/close path, not the originally planned payment path.
@@ -73,6 +81,7 @@ React 18, Vite, TypeScript, wagmi v2, viem v2, Solidity 0.8.28, OpenZeppelin 5.1
 ```sh
 bun install --frozen-lockfile
 bun run dev
+bun run typecheck:app
 bun run contracts:build
 bun run contracts:test
 bun test src/lib/mainnet-preflight.test.ts src/lib/payment-preflight.test.ts src/components/WriteGate.test.ts src/components/StepCreate.test.ts

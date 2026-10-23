@@ -111,7 +111,7 @@ export function WriteGate({
   const messages: Record<WriteGateReason, string> = {
     'no-wallet': 'Connect your wallet to submit transactions.',
     'wrong-chain': `Switch your wallet to ${chainLabel} to submit transactions.`,
-    'unreviewed-factory': `Writes are disabled: the configured factory address has not been reviewed and approved for ${chainLabel}. No deployment has been approved yet.`,
+    'unreviewed-factory': `Writes are disabled: this factory is not reviewed for ${chainLabel}. Choose the reviewed factory in settings.`,
     'vault-not-registered': 'Writes are disabled: this vault is not registered in the configured factory. It may have been deployed outside the factory.',
     'registry-loading': 'Checking vault registry…',
     'registry-error': 'Could not verify vault registry. Writes are disabled until the check succeeds.',

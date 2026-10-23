@@ -7,13 +7,14 @@
  */
 
 import { CheckCircle2, Clock, Lock, Users, Receipt } from 'lucide-react'
+import { MeetupSimulation } from './MeetupSimulation'
 
 // ─── Illustrative data (clearly labelled as demo) ────────────────────────────
 
 const DEMO_PARTICIPANTS = [
-  { addr: '0xAlice…', share: '40%', amount: '40.00', claimed: true },
-  { addr: '0xBob…',   share: '35%', amount: '35.00', claimed: true },
-  { addr: '0xCarol…', share: '25%', amount: '25.00', claimed: false },
+  { addr: '0xAlice…', share: '40%', amount: '40.00', refund: '28.00', claimed: true },
+  { addr: '0xBob…',   share: '35%', amount: '35.00', refund: '24.50', claimed: true },
+  { addr: '0xCarol…', share: '25%', amount: '25.00', refund: '17.50', claimed: false },
 ]
 
 const DEMO_PROPOSALS = [
@@ -44,7 +45,7 @@ function DemoCreate() {
         <li>Participant addresses (2–20, must be sorted)</li>
         <li>Approval threshold — how many participants must sign each payment (minimum 2)</li>
         <li>Collection deadline — when deposits close</li>
-        <li>Spend deadline — when the spending window ends (up to 90 days after collection)</li>
+        <li>Spend deadline — when the spending window ends (up to 90 days after creation)</li>
         <li>Guardian address — must be one of the participants; can pause the vault</li>
       </ul>
       <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2 text-xs text-slate-500">
@@ -159,7 +160,7 @@ function DemoReturn() {
             <div>
               <span className="font-mono text-xs text-slate-700">{p.addr}</span>
               <div className="text-xs text-slate-400">
-                Entitlement: <span className="font-semibold tabular-nums">${(parseFloat(p.amount) * 0.7).toFixed(6)} USDC</span>
+                Entitlement: <span className="font-semibold tabular-nums">${p.refund} USDC</span>
               </div>
             </div>
             {p.claimed ? (
@@ -216,6 +217,9 @@ function DemoClose() {
 export function DemoView() {
   return (
     <div className="space-y-4">
+      <MeetupSimulation />
+      <details>
+        <summary className="cursor-pointer text-sm text-slate-600">Separate design reference — 100 USDC example</summary>
       {/* Clear demo label */}
       <div className="rounded-2xl bg-violet-50 border border-violet-100 px-4 py-3 flex items-center gap-2">
         <Receipt size={14} className="text-violet-400 shrink-0" />
@@ -231,6 +235,7 @@ export function DemoView() {
       <DemoSpend />
       <DemoReturn />
       <DemoClose />
+      </details>
     </div>
   )
 }
