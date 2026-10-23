@@ -187,6 +187,7 @@ export default function App() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowDemo(s => !s)}
+              aria-label={showDemo ? 'Exit simulation' : 'Simulation'}
               className={`p-2 rounded-lg text-sm transition-colors flex items-center gap-1 ${
                 showDemo
                   ? 'bg-violet-100 text-violet-600'
@@ -195,7 +196,7 @@ export default function App() {
               title="Toggle demo view"
             >
               <Eye size={14} />
-              <span className="text-xs">{showDemo ? 'Exit simulation' : 'Simulation'}</span>
+              <span className="text-xs hidden sm:inline">{showDemo ? 'Exit simulation' : 'Simulation'}</span>
             </button>
             <button
               onClick={() => setShowConfig(s => !s)}
