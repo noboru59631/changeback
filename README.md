@@ -1,14 +1,17 @@
 # ChangeBack
 
-## Native USDC single-send candidate — local validation only
+## Native USDC single-send candidate — public Testnet validated
 
 The user-approved native-USDC alternative now has a separate Testnet-only escrow/factory,
 sender-fixed refunds, reserved short/excess payments and native-mode keeper support.
-It is different from ERC20 `transfer`. Local E2E verifies 30 = 12 venue + 2 staff + 16 refunds;
-public Arc native E2E, Studio synchronization and wallet rehearsal remain pending.
+It is different from ERC20 `transfer`. Local and public Arc Testnet E2E both verify
+30 = 12 venue + 2 staff + 16 refunds, with zero balance and liability. All 14 public
+receipts were independently checked; actual aggregate gas was 0.14082205 test USDC.
+Studio synchronization/development, wallet rehearsal and production operation remain pending.
 `?mode=direct` provides Japanese/English application drafts and read-only inspection with
 collection disabled. **No payment destination is published; Mainnet NO-GO.**
 See [design, provenance, threat model and release gates](docs/native-collection-mvp.md).
+See [public native transactions and independent verification](docs/native-public-testnet-validation.md).
 The native code was written locally after Studio reached its daily limit; it is not claimed
 as Studio-authored. The original ERC20 event flow and historical notes continue below.
 

@@ -1,5 +1,10 @@
 # Native USDC single-send candidate — 2026-10-24
 
+Follow-up: public native Testnet E2E has now completed and fourteen receipts were independently
+verified (30 collected, 14 spent, 16 refunded, zero balance/liability; gas 0.14082205 test USDC).
+See `native-public-testnet-validation.md` for current live evidence. The original local-only
+implementation notes below describe the preceding stage. Studio-native development remains blocked.
+
 Status: local development candidate, NOT a released collection service. Mainnet NO-GO.
 The user explicitly accepted standard/native USDC sending as an additional MVP candidate.
 It is a different transaction path from ERC20 `transfer`.

@@ -1,5 +1,10 @@
 # Native next-stage validation — 2026-10-24 JST
 
+Follow-up: manual faucet verification and explicit approval to receive 20 test USDC per test
+participant resolved the funding blocker. Public native E2E now succeeds; see
+`native-public-testnet-validation.md`. The pre-funding observations below remain historical evidence.
+Studio-native development and production operation are still pending.
+
 Mainnet NO-GO. Collection remains disabled; no participant payment destination or QR is displayed.
 Baseline: PR #3 `2c72f29bfde804f53cd05c375d88bc4c3f56da94`, stacked on unchanged PR #2
 `438d534aa88ccefb9a09504fa5076088b976881e`.

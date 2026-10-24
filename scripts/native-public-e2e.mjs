@@ -104,8 +104,8 @@ try {
   if (!state.terms) {
     const now = (await client.getBlock()).timestamp
     state.terms = { metadataHash: keccak256(stringToHex('ChangeBack approved native public Testnet rehearsal')),
-      fee: String(parseEther('10')), capacity: '3', collectUntil: String(now + 600n),
-      spendUntil: String(now + 1200n), showStaffAmounts: false }
+      fee: String(parseEther('10')), capacity: '3', collectUntil: String(now + 180n),
+      spendUntil: String(now + 600n), showStaffAmounts: false }
     await save()
   }
   const terms = { ...state.terms, fee: BigInt(state.terms.fee), capacity: 3n,

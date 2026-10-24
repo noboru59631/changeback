@@ -1,5 +1,14 @@
 # ChangeBack — current execution status
 
+2026-10-24 latest: the separately approved public native Testnet E2E completed with three
+empty-calldata 10-USDC sends, venue 12, organizer-approved staff 2 and sender-fixed refunds 16.
+Fourteen successful receipts, runtimes, sender/events, 18-decimal refunds and final zero balances/
+liability were independently re-read. Actual aggregate gas: 0.14082205 test USDC, below the
+approved 5; principal 30. Native-source Studio development is still blocked by its daily limit.
+Collection remains disabled; no payment QR/destination is published. Mainnet NO-GO; PR #2,
+existing Mainnet and DoraHacks unchanged. See `docs/native-public-testnet-validation.md`.
+Earlier entries below are historical snapshots, including pre-funding/public-E2E blockers.
+
 2026-10-24 later update: native-USDC single-send candidate added on a separate review branch.
 127 Solidity tests and 22 targeted Node tests pass. Local signed-keeper E2E conserves 30/14/16;
 an additional 27-unit refund/retry case completes. All 27 local receipts re-read independently.
