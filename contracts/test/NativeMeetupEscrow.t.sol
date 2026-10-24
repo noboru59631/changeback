@@ -205,6 +205,65 @@ contract NativeMeetupEscrowTest is Test {
         assertEq(escrow.totalRefunded(), 10 ether);
     }
 
+    function test_RouterPaymentCreditsActualSenderNotTransactionOrigin() public {
+        NativeRefundReceiver router = new NativeRefundReceiver();
+        vm.expectRevert("Pay failed");
+        router.pay{value: 10 ether}(address(escrow));
+        assertEq(escrow.totalCollected(), 0);
+        _approve(address(router));
+        router.pay{value: 10 ether}(address(escrow));
+        (,uint256 routerPaid,,,,) = escrow.members(address(router));
+        (,uint256 alicePaid,,,,) = escrow.members(alice);
+        assertEq(routerPaid, 10 ether);
+        assertEq(alicePaid, 0);
+        _finish();
+        router.unblock();
+        uint256 callerBefore = address(this).balance;
+        escrow.refundFor(address(router));
+        assertEq(address(router).balance, 10 ether);
+        assertEq(address(this).balance, callerBefore);
+    }
+
+    function test_FailedRefundPreservesClaimAndAllAccountingUntilRetry() public {
+        NativeRefundReceiver receiver = new NativeRefundReceiver();
+        _approve(address(receiver));
+        receiver.pay{value: 10 ether}(address(escrow));
+        _finish();
+        vm.expectRevert("Native send failed");
+        escrow.refundFor(address(receiver));
+        (,,uint256 entitlement,,,bool claimed) = escrow.members(address(receiver));
+        assertEq(entitlement, 10 ether);
+        assertFalse(claimed);
+        assertEq(escrow.remainingLiability(), 10 ether);
+        assertEq(escrow.totalRefunded(), 0);
+        assertEq(address(escrow).balance, 10 ether);
+        receiver.unblock();
+        escrow.refundFor(address(receiver));
+        assertEq(escrow.remainingLiability(), 0);
+        assertEq(escrow.totalRefunded(), 10 ether);
+        assertEq(address(escrow).balance, 0);
+    }
+
+    function test_ReservedExcessAndShortCannotFundOverspendDespiteUnaccountedBalance() public {
+        _pay(alice, 13 ether);
+        _pay(bob, 4 ether);
+        vm.deal(address(escrow), 100 ether);
+        vm.warp(collectUntil);
+        vm.prank(organizer);
+        escrow.spend(1, 2 ether, keccak256("staff"));
+        vm.expectRevert("Reserved payments");
+        escrow.executeScheduled(0);
+        _finish();
+        escrow.refundFor(alice);
+        escrow.refundFor(bob);
+        assertEq(alice.balance, 11 ether);
+        assertEq(bob.balance, 4 ether);
+        assertEq(escrow.totalSpent(), 2 ether);
+        assertEq(escrow.totalRefunded(), 15 ether);
+        assertEq(escrow.remainingLiability(), 0);
+        assertEq(escrow.unaccountedBalance(), 83 ether);
+    }
+
     function test_UnaccountedBalanceCannotBeSpentOrSwept() public {
         _pay(alice, 10 ether);
         vm.deal(address(escrow), 100 ether);

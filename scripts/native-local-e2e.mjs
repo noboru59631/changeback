@@ -1,11 +1,12 @@
 import { readFile, writeFile, mkdtemp, unlink, rmdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { spawn } from 'node:child_process'
 import assert from 'node:assert/strict'
 import { createPublicClient, createWalletClient, http, decodeEventLog, keccak256, stringToHex, parseEther } from 'viem'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { nativeMeetupAbi, nativeFactoryAbi } from '../src/lib/native-meetup-abi.ts'
-import { keeperMain } from './meetup-keeper.mjs'
 
 const rpc = process.env.NATIVE_LOCAL_RPC || 'http://127.0.0.1:8548'
 if (!['localhost', '127.0.0.1', '[::1]'].includes(new URL(rpc).hostname)) throw new Error('Loopback only')
@@ -18,6 +19,7 @@ const artifact = path => readFile(new URL(path, import.meta.url), 'utf8').then(J
 const factoryArtifact = await artifact('../contracts/out/NativeMeetupFactory.sol/NativeMeetupFactoryTestnet.json')
 const receiverArtifact = await artifact('../contracts/out/NativeMeetupEscrow.t.sol/NativeRefundReceiver.json')
 const transactions = []
+const keeperRestarts = []
 const confirm = async (hash, action) => {
   const receipt = await client.waitForTransactionReceipt({ hash })
   assert.equal(receipt.status, 'success')
@@ -72,7 +74,23 @@ const register = (payer, deadline) => send(organizer, 'approveApplicant', [payer
 const collect = (payer, value) => wallet.sendTransaction({ account: payer, chain: null, to: escrow,
   value: parseEther(value), data: '0x' }).then(hash => confirm(hash, 'one ordinary native USDC send'))
 const keeperPass = async () => {
-  const result = await keeperMain()
+  const execution = await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [fileURLToPath(new URL('./meetup-keeper.mjs', import.meta.url)),
+      '--execute-testnet'], { env: process.env, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] })
+    let stdout = ''
+    let stderr = ''
+    child.stdout.on('data', chunk => { stdout += chunk })
+    child.stderr.on('data', chunk => { stderr += chunk })
+    child.once('error', reject)
+    child.once('close', code => resolve({ code, stdout, stderr, pid: child.pid }))
+  })
+  assert.ok(execution.code === 0 || execution.code === 1, execution.stderr)
+  const result = execution.stdout.trim().split(/\r?\n/).map(line => JSON.parse(line))
+    .find(line => line.mode === 'loopback' && Array.isArray(line.results))
+  assert.ok(result, execution.stderr || execution.stdout)
+  assert.equal(execution.code, result.results.some(job => job.status === 'retry') ? 1 : 0)
+  keeperRestarts.push({ pid: execution.pid, exitCode: execution.code,
+    jobs: result.results.length, pendingAfter: JSON.parse(await readFile(process.env.MEETUP_KEEPER_STATE, 'utf8')).pending })
   for (const job of result.results) if (job.transactionHash) {
     const receipt = await client.getTransactionReceipt({ hash: job.transactionHash })
     transactions.push({ action: `keeper ${job.functionName}`, hash: job.transactionHash,
@@ -133,7 +151,9 @@ try {
   assert.equal(await client.getTransactionCount({ address: keeper.address }), finalNonce)
   const result = { scope: 'LOCAL ANVIL ONLY; native units simulate USDC; not public Arc evidence',
     chainId: 5042002, factory, main, edge, collected: '30', venue: '12', staff: '2', refunded: '16',
-    edgeCollectedAndRefunded: '27', zeroLiability: true, idempotent: true, transactions }
+    edgeCollectedAndRefunded: '27', zeroLiability: true, idempotent: true,
+    keeperRestartScope: 'Fresh OS process each pass; graceful restart only, not crash-in-flight recovery',
+    keeperRestarts, transactions }
   await writeFile(process.env.NATIVE_E2E_OUTPUT || 'native-local-e2e.json', JSON.stringify(result,
     (_, value) => typeof value === 'bigint' ? value.toString() : value, 2))
   console.log('PASS: native 30 = 12 venue + 2 staff + 16 refunds; edge 27 refunded; same-sender retry; idempotent keeper')
