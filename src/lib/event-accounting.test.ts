@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { reconcilePayments, distributeRefunds } from './event-accounting.ts'
+import { reconcilePayments, distributeRefunds, validateResidualSpend } from './event-accounting.ts'
 import type { PaymentEvidence } from './event-accounting.ts'
 
 const terms = { chainId: 5042002, token: 'usdc', escrow: 'event', fee: 10_000_000n, deadline: 100n }
@@ -51,4 +51,36 @@ test('refund allocation matches the contract, reserves partial payments and cons
     const refunds = distributeRefunds([10n, 10n, 10n, 3n], 10n, spent)
     assert.equal(refunds.reduce((sum, amount) => sum + amount, spent), 33n)
   }
+})
+
+const org = '0xOrganizer'
+const validArgs = (overrides: Partial<{ spent: bigint; finalized: boolean; caller: string; now: bigint }> = {}) => [
+  100n, overrides.spent ?? 40n, overrides.finalized ?? false,
+  org, overrides.caller ?? org,
+  1000n, 2000n, overrides.now ?? 1500n,
+] as const
+
+test('validateResidualSpend returns cap minus spent for valid organizer within spend window', () => {
+  assert.equal(validateResidualSpend(...validArgs()), 60n)
+  assert.equal(validateResidualSpend(...validArgs({ spent: 0n })), 100n)
+})
+
+test('validateResidualSpend rejects when finalized', () => {
+  assert.throws(() => validateResidualSpend(...validArgs({ finalized: true })), /finalized/)
+})
+
+test('validateResidualSpend rejects non-organizer caller', () => {
+  assert.throws(() => validateResidualSpend(...validArgs({ caller: '0xOther' })), /organizer/)
+})
+
+test('validateResidualSpend rejects when spend window has closed', () => {
+  assert.throws(() => validateResidualSpend(...validArgs({ now: 2000n })), /closed/)
+})
+
+test('validateResidualSpend rejects during collection window', () => {
+  assert.throws(() => validateResidualSpend(...validArgs({ now: 999n })), /collection/)
+})
+
+test('validateResidualSpend rejects when budget is fully spent', () => {
+  assert.throws(() => validateResidualSpend(...validArgs({ spent: 100n })), /remaining/)
 })

@@ -3,11 +3,12 @@ import { readFile, writeFile, rename, open, unlink } from 'node:fs/promises'
 import { createPublicClient, createWalletClient, http, keccak256, isAddress } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { meetupAbi, factoryAbi, requireSafeNetwork } from '../src/lib/meetup-abi.ts'
+import { nativeMeetupAbi } from '../src/lib/native-meetup-abi.ts'
 
-export async function runKeeper({ client, escrow, send, maxJobs = 20, startIndex = 0 }) {
+export async function runKeeper({ client, escrow, send, maxJobs = 20, startIndex = 0, abi = meetupAbi, claimedIndex = 4 }) {
   if (!Number.isInteger(maxJobs) || maxJobs < 1 || maxJobs > 20) throw new Error('Job limit must be 1–20')
   if (!Number.isSafeInteger(startIndex) || startIndex < 0) throw new Error('Invalid refund cursor')
-  const read = (functionName, args = []) => client.readContract({ address: escrow, abi: meetupAbi, functionName, args })
+  const read = (functionName, args = []) => client.readContract({ address: escrow, abi, functionName, args })
   const results = []
   let nextIndex = startIndex
   const submit = async (functionName, args) => {
@@ -42,7 +43,7 @@ export async function runKeeper({ client, escrow, send, maxJobs = 20, startIndex
       const memberId = (startIndex + offset) % count
       const payer = await read('participants', [BigInt(memberId)])
       const member = await read('members', [payer])
-      if (!member[4]) await submit('refundFor', [payer])
+      if (!member[claimedIndex]) await submit('refundFor', [payer])
       nextIndex = (memberId + 1) % count
     }
   }
@@ -56,6 +57,9 @@ export async function keeperMain() {
 }
 
 async function keeperRun() {
+  const kind = process.env.MEETUP_KIND || 'erc20'
+  if (!['erc20', 'native'].includes(kind)) throw new Error('Unknown event kind')
+  const abi = kind === 'native' ? nativeMeetupAbi : meetupAbi
   const rpc = process.env.ARC_TESTNET_RPC || 'https://rpc.testnet.arc.io'
   const escrow = process.env.MEETUP_ESCROW
   const factory = process.env.MEETUP_FACTORY
@@ -105,9 +109,9 @@ async function keeperRun() {
     const maxGasPrice = BigInt(process.env.MEETUP_MAX_GAS_PRICE || '100000000000')
     if (maxGasPrice <= 0n || gasPrice > maxGasPrice) throw new Error('Gas price exceeds operator limit')
     const { request } = await client.simulateContract({ account: wallet.account, address: escrow,
-      abi: meetupAbi, functionName, args, gasPrice })
+      abi, functionName, args, gasPrice })
     const gas = await client.estimateContractGas({ account: wallet.account, address: escrow,
-      abi: meetupAbi, functionName, args })
+      abi, functionName, args })
     const gasLimit = gas * 120n / 100n
     const maxGas = BigInt(process.env.MEETUP_MAX_GAS_PER_JOB || '10000000')
     if (gasLimit > maxGas || maxGas <= 0n) throw new Error('Job gas estimate exceeds operator limit')
@@ -125,7 +129,8 @@ async function keeperRun() {
     console.log(JSON.stringify({ confirmed: hash, blockNumber: receipt.blockNumber.toString() }))
     return hash
   }
-  const result = await runKeeper({ client, escrow, send, maxJobs, startIndex: state.nextIndex })
+  const result = await runKeeper({ client, escrow, send, maxJobs, startIndex: state.nextIndex,
+    abi, claimedIndex: kind === 'native' ? 5 : 4 })
   state.nextIndex = result.nextIndex
   if (execute) await save()
   const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(new URL(rpc).hostname)

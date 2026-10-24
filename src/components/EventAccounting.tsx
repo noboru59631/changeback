@@ -3,9 +3,10 @@ import { useAccount, usePublicClient, useWalletClient, useSwitchChain } from 'wa
 import { ConnectKitButton } from 'connectkit'
 import { erc20Abi, getAddress, isAddress, keccak256, stringToHex, decodeEventLog } from 'viem'
 import type { Address, Hex } from 'viem'
-import { meetupAbi, factoryAbi, ARC_TESTNET_ID, USDC } from '../lib/meetup-abi'
-import { formatUsdc } from '../lib/event-accounting'
-import { parseUsdc } from '../lib/format'
+import type { Abi } from 'viem'
+import { meetupAbi, factoryAbi, ARC_TESTNET_ID, USDC } from '@/lib/meetup-abi'
+import { formatUsdc, validateResidualSpend } from '@/lib/event-accounting'
+import { parseUsdc } from '@/lib/format'
 
 type Language = 'ja' | 'en'
 type Member = { wallet: Address; refundTo: Address; nameHash: Hex; paid: bigint; entitlement: bigint; claimed: boolean }
@@ -66,9 +67,10 @@ export function EventAccounting() {
   const load = async (address = escrow) => {
     if (!client || !isAddress(address)) throw new Error(say('イベントアドレスを確認してください', 'Check the event address'))
     const block = await client.getBlockNumber()
-    const read = (functionName: string, args: readonly unknown[] = []) => client.readContract({
-      address: getAddress(address), abi: meetupAbi, functionName, args, blockNumber: block,
-    } as Parameters<typeof client.readContract>[0]) as Promise<unknown>
+    const read = (functionName: string, args: readonly unknown[] = []) =>
+      (client.readContract as unknown as (opts: Record<string, unknown>) => Promise<unknown>)({
+        address: getAddress(address), abi: meetupAbi, functionName, args, blockNumber: block,
+      })
     const terms = await read('terms') as readonly [Hex, bigint, bigint, bigint, bigint, boolean]
     const memberCount = Number(await read('participantCount'))
     const budgetCount = Number(await read('budgetCount'))
@@ -115,8 +117,8 @@ export function EventAccounting() {
     if (!factory && !await client.readContract({ address: reviewedFactory, abi: factoryAbi, functionName: 'isEvent', args: [getAddress(escrow)] })) {
       throw new Error('Event is not from the reviewed factory')
     }
-    const abi = factory ? factoryAbi : address.toLowerCase() === USDC.toLowerCase() ? erc20Abi : meetupAbi
-    const { request } = await client.simulateContract({ address, abi, functionName, args, account: account.address } as Parameters<typeof client.simulateContract>[0])
+    const abi = (factory ? factoryAbi : address.toLowerCase() === USDC.toLowerCase() ? erc20Abi : meetupAbi) as Abi
+    const { request } = await client.simulateContract({ address, abi, functionName, args: args, account: account.address })
     const hash = await wallet.writeContract(request)
     setNotice(say('送信済み・確認待ち: ', 'Submitted, awaiting confirmation: ') + hash)
     const receipt = await client.waitForTransactionReceipt({ hash, timeout: 60_000 })
@@ -275,7 +277,19 @@ export function EventAccounting() {
           {(budget.category !== 2 || state.showStaffAmounts || organizer) && <p>{say('上限 / 支出済み', 'Cap / paid')}: {formatUsdc(budget.cap)} / {formatUsdc(budget.spent)} USDC</p>}
           <p>{budget.automatic ? say('集金期限後に設定上限額を支払う・実行者が必要', 'Exact configured cap after collection · keeper required') : budget.category === 2 ? say('主催者の業務完了承認で固定額を支払う', 'Fixed amount after organizer confirms work completed') : say('主催者が上限内で支払う', 'Organizer payment within cap')}</p>
           {budget.automatic && <button disabled={!enabled || state.finalized || budget.spent > 0n} className={buttonClass} onClick={() => act(async () => { await send(getAddress(escrow), 'executeScheduled', [BigInt(index)]); await load() })}>{say('条件を確認して実行', 'Execute if due')}</button>}
-          {organizer && !budget.automatic && <button disabled={!enabled || state.finalized || budget.spent > 0n} className={buttonClass} onClick={() => act(async () => { await send(getAddress(escrow), 'spend', [BigInt(index), budget.cap, keccak256(stringToHex('Organizer confirmed completion'))]); await load() })}>{budget.category === 2 ? say('業務完了を確認・固定報酬を送金', 'Confirm completed work and pay fixed reward') : say('設定上限額を送金', 'Pay configured cap')}</button>}
+          {organizer && !budget.automatic && budget.category === 2 && <button disabled={!enabled || state.finalized || budget.spent > 0n} className={buttonClass} onClick={() => act(async () => { await send(getAddress(escrow), 'spend', [BigInt(index), budget.cap, keccak256(stringToHex('Organizer confirmed completion'))]); await load() })}>{say('業務完了を確認・固定報酬を送金', 'Confirm completed work and pay fixed reward')}</button>}
+          {organizer && !budget.automatic && budget.category !== 2 && <button disabled={!enabled || state.finalized || budget.spent >= budget.cap} className={buttonClass} onClick={() => act(async () => {
+            const fresh = await load()
+            const fb = fresh.budgets[index]
+            const residual = validateResidualSpend(
+              fb.cap, fb.spent, fresh.finalized,
+              fresh.organizer, account.address ?? '',
+              fresh.collectUntil, fresh.spendUntil,
+              BigInt(Math.floor(Date.now() / 1000)),
+            )
+            await send(getAddress(escrow), 'spend', [BigInt(index), residual, keccak256(stringToHex('Organizer payment'))])
+            await load()
+          })}>{say('残予算を送金', 'Pay remaining budget')}</button>}
         </div>)}
         <p className="text-sm">{say('個別報酬を非表示にしても、コントラクト設定と送金履歴は公開されます。', 'Hiding individual rewards in this screen does not hide contract configuration or onchain transfers.')}</p>
       </section>

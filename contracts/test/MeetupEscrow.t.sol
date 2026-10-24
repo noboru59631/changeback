@@ -374,4 +374,50 @@ contract MeetupEscrowTest is Test {
         vm.stopPrank();
         assertEq(escrow.remainingLiability(), FEE * 99);
     }
+
+    function test_ManualMerchantPartialThenResidualThenOvercap() public {
+        pay(alice, FEE);
+        pay(bob, FEE);
+        pay(carol, FEE);
+        startSpending();
+        vm.startPrank(alice);
+        escrow.spend(0, 7e6, keccak256("partial invoice"));
+        assertEq(escrow.budgetSpent(0), 7e6);
+        escrow.spend(0, 5e6, keccak256("final invoice"));
+        assertEq(escrow.budgetSpent(0), 12e6);
+        vm.expectRevert("Budget cap");
+        escrow.spend(0, 1, keccak256("extra"));
+        vm.stopPrank();
+    }
+
+    function test_StaffSplitPaymentRejected() public {
+        pay(alice, FEE);
+        pay(bob, FEE);
+        startSpending();
+        vm.startPrank(alice);
+        vm.expectRevert("Fixed staff payment");
+        escrow.spend(2, 1e6, bytes32(0));
+        vm.expectRevert("Budget cap");
+        escrow.spend(2, 0, bytes32(0));
+        escrow.spend(2, 2e6, bytes32(0));
+        vm.expectRevert("Budget cap");
+        escrow.spend(2, 1, bytes32(0));
+        vm.stopPrank();
+    }
+
+    function test_DirectTransferDoesNotCreditMemberOrRefundPool() public {
+        pay(alice, FEE);
+        token.mint(carol, FEE);
+        vm.prank(carol);
+        token.transfer(address(escrow), FEE);
+        (,,uint256 carolPaid,,) = escrow.members(carol);
+        assertEq(carolPaid, 0);
+        assertEq(escrow.totalCollected(), FEE);
+        assertEq(escrow.unaccountedBalance(), FEE);
+        finish();
+        escrow.refundFor(alice);
+        assertEq(escrow.totalRefunded(), FEE);
+        assertEq(escrow.unaccountedBalance(), FEE);
+        assertEq(token.balanceOf(address(escrow)), FEE);
+    }
 }

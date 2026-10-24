@@ -14,7 +14,9 @@
     "check": "bash scripts/check.sh",
     "contracts:build": "forge build",
     "contracts:test": "forge test",
-    "events:test": "node --test src/lib/event-accounting.test.ts scripts/meetup-keeper.test.mjs",
+    "events:test": "node --test src/lib/event-accounting.test.ts src/lib/native-accounting.test.ts scripts/meetup-keeper.test.mjs",
+    "events:native-local-e2e": "node scripts/native-local-e2e.mjs",
+    "events:native-verify": "node scripts/verify-native-local-e2e.mjs",
     "events:local-e2e": "node scripts/meetup-local-e2e.mjs",
     "events:keeper": "node scripts/meetup-keeper.mjs",
     "events:keeper-service": "node scripts/meetup-keeper-service.mjs --execute-testnet"
