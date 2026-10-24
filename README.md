@@ -1,5 +1,17 @@
 # ChangeBack
 
+## Native USDC single-send candidate — local validation only
+
+The user-approved native-USDC alternative now has a separate Testnet-only escrow/factory,
+sender-fixed refunds, reserved short/excess payments and native-mode keeper support.
+It is different from ERC20 `transfer`. Local E2E verifies 30 = 12 venue + 2 staff + 16 refunds;
+public Arc native E2E, Studio synchronization and wallet rehearsal remain pending.
+`?mode=direct` provides Japanese/English application drafts and read-only inspection with
+collection disabled. **No payment destination is published; Mainnet NO-GO.**
+See [design, provenance, threat model and release gates](docs/native-collection-mvp.md).
+The native code was written locally after Studio reached its daily limit; it is not claimed
+as Studio-authored. The original ERC20 event flow and historical notes continue below.
+
 ## Event accounting MVP — 2026-10-24
 
 The separate event-accounting review branch adds a Testnet-only escrow/factory, fixed budget recipients, scheduled merchant payments, organizer-approved staff rewards, equal surplus refunds, a bounded retrying keeper, and a Japanese/English screen at `?mode=events`. It builds on PR #1 and is not deployed to the public app or Studio. **Mainnet NO-GO.**

@@ -75,6 +75,20 @@ export function distributeRefunds(paid: bigint[], fee: bigint, spent: bigint) {
   })
 }
 
+export function validateResidualSpend(
+  budgetCap: bigint, budgetSpent: bigint, finalized: boolean,
+  organizerAddress: string, callerAddress: string,
+  collectUntil: bigint, spendUntil: bigint, now: bigint,
+): bigint {
+  if (finalized) throw new Error('Already finalized')
+  if (organizerAddress.toLowerCase() !== callerAddress.toLowerCase()) throw new Error('Only the organizer may call this')
+  if (now >= spendUntil) throw new Error('Spend window has closed')
+  if (now < collectUntil) throw new Error('Cannot spend during collection')
+  const residual = budgetCap - budgetSpent
+  if (residual <= 0n) throw new Error('No remaining budget')
+  return residual
+}
+
 export function formatUsdc(amount: bigint) {
   const whole = amount / 1_000_000n
   const fraction = (amount % 1_000_000n).toString().padStart(6, '0').replace(/0+$/, '')

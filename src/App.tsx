@@ -38,6 +38,7 @@
 
 import { useState } from 'react'
 import { EventAccounting } from './components/EventAccounting'
+import { NativeCollection } from './components/NativeCollection'
 import { GettingStarted } from './components/GettingStarted'
 import { useAccount, useReadContract } from 'wagmi'
 import { ConnectKitButton } from 'connectkit'
@@ -97,6 +98,7 @@ function parseUrlChainId(search: string): number | undefined {
 }
 
 export default function App() {
+  if (new URLSearchParams(window.location.search).get('mode') === 'direct') return <NativeCollection />
   return new URLSearchParams(window.location.search).get('mode') === 'events'
     ? <EventAccounting /> : <LegacyApp />
 }
@@ -219,6 +221,7 @@ function LegacyApp() {
       <main className="max-w-lg mx-auto px-4 py-6 space-y-5 pb-20">
         <GettingStarted simulation={showDemo} mainnet={onMainnet} connected={isConnected} onSimulate={() => setShowDemo(true)} />
         <a className="block text-sm text-violet-700 underline" href="?mode=events">イベント会計MVP / Event accounting MVP (Testnet only)</a>
+        <a className="block text-sm text-violet-700 underline" href="?mode=direct">USDC送金1回の検証 / Single-send USDC review (collection disabled)</a>
 
         {/* Mainnet info banner — informational ONLY; does not gate writes */}
         {onMainnet && !showDemo && !mainnetAcknowledged && (
