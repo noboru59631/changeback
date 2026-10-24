@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises'
+import { readFile, writeFile, mkdtemp, unlink, rmdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import assert from 'node:assert/strict'
@@ -141,5 +141,8 @@ try {
   process.argv.pop()
   for (const name of Object.keys(process.env)) if (!(name in environmentBefore)) delete process.env[name]
   Object.assign(process.env, environmentBefore)
-  await rm(temporary, { recursive: true, force: true })
+  for (const file of [keyPath, join(temporary, 'state.json'), join(temporary, 'state.json.tmp'), join(temporary, 'worker.lock')]) {
+    try { await unlink(file) } catch (error) { if (error.code !== 'ENOENT') throw error }
+  }
+  await rmdir(temporary)
 }
