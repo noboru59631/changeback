@@ -12,3 +12,6 @@ contracts/broadcast/
 *.pem
 *.p12
 *.pfx
+/lib/
+.meetup-keeper-*.json*
+.meetup-keeper.lock

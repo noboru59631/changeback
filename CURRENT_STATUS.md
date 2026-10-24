@@ -1,5 +1,9 @@
 # ChangeBack — current execution status
 
+2026-10-24: A separate Testnet-only event accounting MVP has been implemented on `feature/event-accounting-mvp`, based on PR #1. Local mock-USDC transaction E2E completes 30 collected → 14 spent + 16 refunded, with zero remaining liability and zero repeated keeper jobs. Public Testnet has only been probed read-only; no new public deployment, real-fund transfer, Mainnet operation or DoraHacks update is claimed. **Mainnet NO-GO. Ordinary direct-transfer collection is not implemented and must not be advertised.** See [the new design and release gates](docs/event-accounting-mvp.md).
+
+The 2026-10-19 notes below are historical and do not authorize further Mainnet activity. The current user's separate-approval restriction controls all new Mainnet activity.
+
 2026-10-19: The user approved the bounded fourteen-operation Mainnet demonstration. **Factory deployment has succeeded; Vault creation, application USDC transfers, refunds, closure and the walkthrough video remain pending.**
 
 - Studio: https://studio.arc.io/app/8fb26e26-3f43-40dc-a940-85228dbbf710
