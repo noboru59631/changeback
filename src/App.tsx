@@ -37,6 +37,7 @@
  */
 
 import { useState } from 'react'
+import { EventAccounting } from './components/EventAccounting'
 import { GettingStarted } from './components/GettingStarted'
 import { useAccount, useReadContract } from 'wagmi'
 import { ConnectKitButton } from 'connectkit'
@@ -96,6 +97,11 @@ function parseUrlChainId(search: string): number | undefined {
 }
 
 export default function App() {
+  return new URLSearchParams(window.location.search).get('mode') === 'events'
+    ? <EventAccounting /> : <LegacyApp />
+}
+
+function LegacyApp() {
   const { chainId: walletChainId, isConnected } = useAccount()
   const { switchChain, isPending: isSwitching } = useSwitchChain()
 
@@ -212,6 +218,7 @@ export default function App() {
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-5 pb-20">
         <GettingStarted simulation={showDemo} mainnet={onMainnet} connected={isConnected} onSimulate={() => setShowDemo(true)} />
+        <a className="block text-sm text-violet-700 underline" href="?mode=events">イベント会計MVP / Event accounting MVP (Testnet only)</a>
 
         {/* Mainnet info banner — informational ONLY; does not gate writes */}
         {onMainnet && !showDemo && !mainnetAcknowledged && (

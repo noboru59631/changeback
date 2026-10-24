@@ -13,7 +13,11 @@
     "typecheck:app": "tsc --noEmit -p tsconfig.app.json",
     "check": "bash scripts/check.sh",
     "contracts:build": "forge build",
-    "contracts:test": "forge test"
+    "contracts:test": "forge test",
+    "events:test": "node --test src/lib/event-accounting.test.ts scripts/meetup-keeper.test.mjs",
+    "events:local-e2e": "node scripts/meetup-local-e2e.mjs",
+    "events:keeper": "node scripts/meetup-keeper.mjs",
+    "events:keeper-service": "node scripts/meetup-keeper-service.mjs --execute-testnet"
   },
   "dependencies": {
     "@circle-fin/adapter-viem-v2": "^1.18.0",

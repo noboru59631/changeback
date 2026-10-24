@@ -1,5 +1,13 @@
 # ChangeBack
 
+## Event accounting MVP — 2026-10-24
+
+The separate event-accounting review branch adds a Testnet-only escrow/factory, fixed budget recipients, scheduled merchant payments, organizer-approved staff rewards, equal surplus refunds, a bounded retrying keeper, and a Japanese/English screen at `?mode=events`. It builds on PR #1 and is not deployed to the public app or Studio. **Mainnet NO-GO.**
+
+**Do not send ordinary USDC transfers to either the existing Vault or the new escrow.** Use the new contract payment flow for atomic transfer and accounting. The requested single ordinary transfer experience is not implemented; the current UI needs self-registration, token approval and payment. Unsolicited transfers are unaccounted and can be stranded.
+
+See [event-accounting design, verification, operation counts and release gates](docs/event-accounting-mvp.md). New UI writes stay disabled until a reviewed Testnet deployment and runtime hash are configured. The legacy product and its historical evidence continue below.
+
 A time-bounded shared USDC budget built in Arc Studio. Participants collect funds, approve payments by quorum, and return unspent funds to contributors before closing the vault.
 
 ## November readiness work — review branch
