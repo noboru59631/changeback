@@ -25,6 +25,7 @@ The v3 Mainnet demonstration completed with no funds or refund liabilities left 
 - [Final refunds](https://explorer.arc.io/tx/0x42a04254eed02d6313b9b11f70eede4a3b34ab7892d1e39acbcb57dbb5f9bbe1)
 - [Arc Studio project](https://studio.arc.io/app/8fb26e26-3f43-40dc-a940-85228dbbf710)
 - [Read-only v3 Mainnet proof UI](https://changeback-v3-mainnet-proof.crypto5555111.chatgpt.site)
+- [42-second v3 evidence video](https://changeback-v3-mainnet-proof.crypto5555111.chatgpt.site/ChangeBack-v3-Arc-Mainnet-proof-demo-2026-10-31.mp4)
 - [DoraHacks submission](https://dorahacks.io/build/50059)
 
 Both participant records report `claimed=true`. Independent read-only RPC verification also confirmed `contractVersion=3`, the Factory/Event code, totals, expense accounting, final balance, and liability.
