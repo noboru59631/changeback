@@ -1,482 +1,136 @@
-/**
- * ChangeBack — shared USDC budget app.
- * Six-step lifecycle: Create → Collect → Approve → Spend → Return → Close.
- *
- * CHAIN SELECTION:
- *   The "selected chain" for reads and writes comes from:
- *     1. ?chainId= URL parameter (highest priority — enables wallet-free reads)
- *     2. A user-facing chain selector in the config panel
- *   It is NEVER silently overridden by the connected wallet's chain.
- *   The wallet chain must MATCH the selected chain before any write is allowed.
- *
- * READ-ONLY ACCESS:
- *   VaultCard, StepRail, and all phase/proposal reads are outside the wallet
- *   gate. Anyone with a share link (?chainId=&factory=&vault=) can view vault
- *   state without connecting a wallet.
- *
- * WRITE GATE (enforced by WriteGate / useWriteAllowed):
- *   ALL writes — create, approve-USDC, deposit, propose, vote, revoke, execute,
- *   early-return, pause, finalize, claimFor, close — are disabled unless:
- *     1. Wallet connected
- *     2. Wallet chain === selected chain
- *     3. Factory address is in REVIEWED_FACTORY_ADDRESSES for that chain
- *     4. factory.isVault(vault) === true (when a vault is loaded)
- *   Arc Testnet allowlist: 0x0cf03f85278a7d1ce3057b77043e1b9af3da2ec0.
- *   Arc Mainnet allowlist: empty (no mainnet deployment approved).
- *   No acknowledgement toggle, no runtime paste, no isVault result alone
- *   can bypass these conditions.
- *
- * FACTORY TRUST:
- *   A user-pasted factory address is not trusted provenance. The UI shows the
- *   registry result as informational, clearly labeled as unverified. Unknown
- *   factories keep vault reads open but all writes remain blocked.
- *
- * SHARE LINKS:
- *   Share URLs include ?chainId=&factory=&vault= so mainnet links load
- *   the correct chain without a wallet.
- */
-
-import { useState } from 'react'
-import { useAccount, useReadContract } from 'wagmi'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ConnectKitButton } from 'connectkit'
-import { useSwitchChain } from 'wagmi'
-import { FACTORY_ABI, VAULT_ABI } from '@/lib/abi'
-import {
-  ARC_TESTNET_CHAIN_ID,
-  ARC_MAINNET_CHAIN_ID,
-  SUPPORTED_CHAIN_IDS,
-  CHAIN_CONFIG,
-  Phase,
-  isReviewedFactory,
-} from '@/lib/constants'
-import { StepRail } from '@/components/StepRail'
-import { VaultCard } from '@/components/VaultCard'
-import { StepCreate } from '@/components/StepCreate'
-import { StepCollect } from '@/components/StepCollect'
-import { StepApproveSpend } from '@/components/StepApproveSpend'
-import { StepReturn } from '@/components/StepReturn'
-import { StepClose } from '@/components/StepClose'
-import { DemoView } from '@/components/DemoView'
-import { AlertTriangle, ExternalLink, Settings, Eye, ShieldOff } from 'lucide-react'
+import { useAccount, usePublicClient, useSwitchChain, useWalletClient } from 'wagmi'
+import { decodeEventLog, encodeDeployData, formatEther, getAddress, isAddress, keccak256, parseEther, toBytes, type Address, type Hash, type TransactionReceipt } from 'viem'
+import { toast } from 'sonner'
+import { V3_EVENT_ABI, V3_FACTORY_ABI } from './lib/v3-abi'
+import { V3_FACTORY_BYTECODE } from './lib/v3-factory-bytecode'
 
-function phaseToStep(phase: number | null): number {
-  if (phase === null) return 0
-  if (phase === Phase.Collecting) return 1
-  if (phase === Phase.Active)     return 2
-  if (phase === Phase.Returning)  return 4
-  if (phase === Phase.Closed)     return 5
-  return 0
+const ARC_MAINNET = 5042
+const VERIFIED_FACTORY = '0xAEE87C6fcB12023BAEE096e2B01d8667626f8a36' as Address
+const VERIFIED_EVENT = '0xfaA58b67BF24Bc9AB92959339105F6e59901d323' as Address
+const EXPLORER = 'https://explorer.arc.io'
+const VERIFIED_COMPLETION: HistoryItem[] = [
+  { key: 'verified-staff', label: 'Expense · staff paid', hash: '0xb8f6aa0445d70c3f02d9e866e6fba09b4be9ba522ba0edbb9d5851c50812995c', block: 28_657_579n },
+  { key: 'verified-finalize', label: 'Finalized', hash: '0xeb1ecd0bf3edbb37d3eeb8653b5c3f31a3a7c8ed3958d12cbd87fefab1584747', block: 28_662_513n },
+  { key: 'verified-refunds', label: 'Refunded · final batch', hash: '0x42a04254eed02d6313b9b11f70eede4a3b34ab7892d1e39acbcb57dbb5f9bbe1', block: 28_665_380n },
+]
+
+type FactoryState = { version: bigint; operator: Address; hasCreated: boolean; eventRegistered: boolean }
+type Member = { address: Address; paid: bigint; entitlement: bigint; transfers: bigint; approvalUntil: bigint; claimed: boolean }
+type Budget = { recipient: Address; cap: bigint; category: number; payAfter: bigint; automatic: boolean; spent: bigint; authorized: boolean }
+type EventState = { version: bigint; organizer: Address; createdAtBlock: bigint; fee: bigint; capacity: bigint; collectUntil: bigint; spendUntil: bigint; participantCount: bigint; budgetCount: bigint; totalCollected: bigint; totalSpent: bigint; totalRefunded: bigint; remainingLiability: bigint; paidCount: bigint; finalized: boolean; reservedStaff: bigint; members: Member[]; budgets: Budget[] }
+type HistoryItem = { key: string; label: string; hash: Hash; block: bigint }
+type TxPlan = { title: string; contract: string; value: bigint; detail: string; execute: () => Promise<Hash>; afterReceipt?: (receipt: TransactionReceipt) => void }
+
+const short = (value?: string) => value ? `${value.slice(0, 6)}…${value.slice(-4)}` : '—'
+const usdc = (value: bigint) => `${Number(formatEther(value)).toLocaleString(undefined, { maximumFractionDigits: 6 })} USDC`
+const when = (value: bigint) => new Date(Number(value) * 1000).toLocaleString()
+const categoryName = (value: number) => ['Venue', 'Other', 'Staff'][value] ?? `Category ${value}`
+
+function Field({ label, value, onChange, placeholder, type = 'text', min }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; type?: string; min?: string }) {
+  return <label className="field"><span>{label}</span><input value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} type={type} min={min} /></label>
 }
+function StatusPill({ ok, children }: { ok: boolean; children: ReactNode }) { return <span className={`pill ${ok ? 'ok' : 'muted'}`}><i />{children}</span> }
 
-/**
- * Pure routing predicate — exported for unit testing.
- *
- * close() is callable on-chain during Returning phase (after all claimFor
- * calls succeed) as well as after Closed. Rendering StepClose only when
- * phase===Closed would make close() unreachable from the UI during Returning.
- * StepClose handles both states: the button is disabled until liability===0,
- * and shows the locked banner once isClosed===true.
- */
-export function shouldShowClose(phase: number | null): boolean {
-  return phase === Phase.Returning || phase === Phase.Closed
+function App() {
+  const { address, chainId, isConnected } = useAccount()
+  const { data: walletClient } = useWalletClient()
+  const publicClient = usePublicClient({ chainId: ARC_MAINNET })!
+  const { switchChain, isPending: switching } = useSwitchChain()
+  const [mode, setMode] = useState<'proof' | 'launch'>('proof')
+  const [factoryAddress, setFactoryAddress] = useState<Address>(VERIFIED_FACTORY)
+  const [eventAddress, setEventAddress] = useState<Address>(VERIFIED_EVENT)
+  const [factory, setFactory] = useState<FactoryState | null>(null)
+  const [eventState, setEventState] = useState<EventState | null>(null)
+  const [history, setHistory] = useState<HistoryItem[]>([])
+  const [loading, setLoading] = useState(false)
+  const [plan, setPlan] = useState<TxPlan | null>(null)
+  const [pending, setPending] = useState(false)
+  const [lastHash, setLastHash] = useState<Hash | null>(null)
+  const [factoryInput, setFactoryInput] = useState('')
+  const [title, setTitle] = useState('Arc Microgrants judge demo')
+  const [capacity, setCapacity] = useState('1')
+  const [fee, setFee] = useState('0.001')
+  const [collectMinutes, setCollectMinutes] = useState('2')
+  const [spendMinutes, setSpendMinutes] = useState('10')
+  const [staffRecipient, setStaffRecipient] = useState('')
+  const [staffCap, setStaffCap] = useState('0.0002')
+  const [applicant, setApplicant] = useState('')
+  const [applicantName, setApplicantName] = useState('Judge participant')
+
+  useEffect(() => { if (address) { if (!staffRecipient) setStaffRecipient(address); if (!applicant) setApplicant(address) } }, [address, applicant, staffRecipient])
+
+  const readFactory = useCallback(async (target: Address, registeredEvent?: Address) => {
+    const [version, operator, hasCreated, eventRegistered] = await Promise.all([
+      publicClient.readContract({ address: target, abi: V3_FACTORY_ABI, functionName: 'contractVersion' }),
+      publicClient.readContract({ address: target, abi: V3_FACTORY_ABI, functionName: 'deploymentOperator' }),
+      publicClient.readContract({ address: target, abi: V3_FACTORY_ABI, functionName: 'hasCreatedEvent' }),
+      registeredEvent ? publicClient.readContract({ address: target, abi: V3_FACTORY_ABI, functionName: 'isEvent', args: [registeredEvent] }) : Promise.resolve(false),
+    ])
+    setFactory({ version, operator, hasCreated, eventRegistered })
+  }, [publicClient])
+
+  const readEvent = useCallback(async (target: Address) => {
+    setLoading(true)
+    try {
+      const [version, organizer, createdAtBlock, terms, participantCount, budgetCount, totalCollected, totalSpent, totalRefunded, remainingLiability, paidCount, finalized, reservedStaff] = await Promise.all([
+        publicClient.readContract({ address: target, abi: V3_EVENT_ABI, functionName: 'contractVersion' }), publicClient.readContract({ address: target, abi: V3_EVENT_ABI, functionName: 'organizer' }), publicClient.readContract({ address: target, abi: V3_EVENT_ABI, functionName: 'createdAtBlock' }), publicClient.readContract({ address: target, abi: V3_EVENT_ABI, functionName: 'terms' }), publicClient.readContract({ address: target, abi: V3_EVENT_ABI, functionName: 'participantCount' }), publicClient.readContract({ address: target, abi: V3_EVENT_ABI, functionName: 'budgetCount' }), publicClient.readContract({ address: target, abi: V3_EVENT_ABI, functionName: 'totalCollected' }), publicClient.readContract({ address: target, abi: V3_EVENT_ABI, functionName: 'totalSpent' }), publicClient.readContract({ address: target, abi: V3_EVENT_ABI, functionName: 'totalRefunded' }), publicClient.readContract({ address: target, abi: V3_EVENT_ABI, functionName: 'remainingLiability' }), publicClient.readContract({ address: target, abi: V3_EVENT_ABI, functionName: 'paidCount' }), publicClient.readContract({ address: target, abi: V3_EVENT_ABI, functionName: 'finalized' }), publicClient.readContract({ address: target, abi: V3_EVENT_ABI, functionName: 'reservedStaff' }),
+      ])
+      const members = await Promise.all(Array.from({ length: Number(participantCount) }, async (_, index) => { const memberAddress = await publicClient.readContract({ address: target, abi: V3_EVENT_ABI, functionName: 'participants', args: [BigInt(index)] }); const member = await publicClient.readContract({ address: target, abi: V3_EVENT_ABI, functionName: 'members', args: [memberAddress] }); return { address: memberAddress, paid: member[1], entitlement: member[2], transfers: member[3], approvalUntil: member[4], claimed: member[5] } }))
+      const budgets = await Promise.all(Array.from({ length: Number(budgetCount) }, async (_, index) => { const budgetId = BigInt(index); const [budget, spent, authorized] = await Promise.all([publicClient.readContract({ address: target, abi: V3_EVENT_ABI, functionName: 'budgets', args: [budgetId] }), publicClient.readContract({ address: target, abi: V3_EVENT_ABI, functionName: 'budgetSpent', args: [budgetId] }), publicClient.readContract({ address: target, abi: V3_EVENT_ABI, functionName: 'staffAuthorized', args: [budgetId] })]); return { recipient: budget[0], cap: budget[1], category: budget[2], payAfter: budget[3], automatic: budget[4], spent, authorized } }))
+      setEventState({ version, organizer, createdAtBlock, fee: terms[1], capacity: terms[2], collectUntil: terms[3], spendUntil: terms[4], participantCount, budgetCount, totalCollected, totalSpent, totalRefunded, remainingLiability, paidCount, finalized, reservedStaff, members, budgets })
+      const latestBlock = await publicClient.getBlockNumber()
+      // The lifecycle is at most 90 days and the verified demo completed in
+      // the first few blocks. Arc's public RPC applies a tighter practical
+      // eth_getLogs window than its error text advertises, so scan 10k blocks.
+      const logToBlock = latestBlock - createdAtBlock > 9_999n ? createdAtBlock + 9_999n : latestBlock
+      const lifecycleNames = new Set(['Approved', 'NativePaid', 'StaffAuthorized', 'Expense', 'Finalized', 'Refunded'])
+      const logs = await publicClient.getLogs({ address: target, fromBlock: createdAtBlock, toBlock: logToBlock })
+      const decoded = logs.flatMap((log, index) => {
+        try {
+          const event = decodeEventLog({ abi: V3_EVENT_ABI, data: log.data, topics: log.topics })
+          return lifecycleNames.has(event.eventName) && log.transactionHash && log.blockNumber
+            ? [{ key: `${log.transactionHash}-${index}`, label: event.eventName, hash: log.transactionHash, block: log.blockNumber }]
+            : []
+        } catch { return [] }
+      })
+      const completed = target.toLowerCase() === VERIFIED_EVENT.toLowerCase() ? VERIFIED_COMPLETION : []
+      setHistory([...decoded, ...completed].sort((a, b) => Number(b.block - a.block)))
+    } catch (error) { setEventState(null); setHistory([]); toast.error(error instanceof Error ? error.message : 'Could not read event') } finally { setLoading(false) }
+  }, [publicClient])
+
+  const refresh = useCallback(async () => { try { await readFactory(factoryAddress, eventAddress); await readEvent(eventAddress) } catch (error) { toast.error(error instanceof Error ? error.message : 'Could not refresh Arc state') } }, [eventAddress, factoryAddress, readEvent, readFactory])
+  useEffect(() => { void refresh() }, [refresh])
+
+  const requireWallet = () => { if (!address || !walletClient) throw new Error('Connect a wallet first.'); if (chainId !== ARC_MAINNET) throw new Error('Switch your wallet to Arc Mainnet.'); return { account: address, wallet: walletClient } }
+  const contractPlan = (input: { title: string; contract: Address; detail: string; value?: bigint; abi: typeof V3_FACTORY_ABI | typeof V3_EVENT_ABI; functionName: string; args?: readonly unknown[]; afterReceipt?: (receipt: TransactionReceipt) => void }) => setPlan({ title: input.title, contract: input.contract, value: input.value ?? 0n, detail: input.detail, afterReceipt: input.afterReceipt, execute: async () => { const { account, wallet } = requireWallet(); const simulation = await publicClient.simulateContract({ account, address: input.contract, abi: input.abi, functionName: input.functionName as never, args: input.args as never, value: input.value }); return wallet.writeContract(simulation.request) } })
+
+  const submitPlan = async () => { if (!plan || pending) return; setPending(true); try { const hash = await plan.execute(); setLastHash(hash); toast.message('Transaction submitted', { description: short(hash) }); const receipt = await publicClient.waitForTransactionReceipt({ hash, confirmations: 1 }); if (receipt.status !== 'success') throw new Error('Transaction reverted.'); plan.afterReceipt?.(receipt); toast.success('Confirmed on Arc Mainnet'); setPlan(null); await refresh() } catch (error) { toast.error(error instanceof Error ? error.message : 'Transaction failed') } finally { setPending(false) } }
+
+  const planFactoryDeploy = () => setPlan({ title: 'Deploy fresh v3 Factory', contract: 'New contract (address assigned after confirmation)', value: 0n, detail: 'Deploys the same bounded, one-event Mainnet Factory from the reviewed repository. Your connected wallet becomes its only event creator.', execute: async () => { const { account, wallet } = requireWallet(); await publicClient.estimateGas({ account, data: encodeDeployData({ abi: V3_FACTORY_ABI, bytecode: V3_FACTORY_BYTECODE }) }); return wallet.deployContract({ account, abi: V3_FACTORY_ABI, bytecode: V3_FACTORY_BYTECODE }) }, afterReceipt: receipt => { if (!receipt.contractAddress) return; setFactoryAddress(receipt.contractAddress); setFactoryInput(receipt.contractAddress); setFactory(null); setEventState(null) } })
+  const loadFactory = async () => { if (!isAddress(factoryInput)) return toast.error('Enter a valid Factory address.'); const next = getAddress(factoryInput); try { await readFactory(next); setFactoryAddress(next); setEventState(null); setHistory([]); toast.success('Factory loaded') } catch { toast.error('This is not a compatible ChangeBack v3 Factory.') } }
+
+  const planCreateEvent = () => { try { if (!factory || factory.hasCreated) throw new Error('This Factory has already created its one allowed event.'); if (!address || factory.operator.toLowerCase() !== address.toLowerCase()) throw new Error('Only this Factory’s deployment wallet can create its event.'); if (!isAddress(staffRecipient)) throw new Error('Enter a valid staff recipient.'); const capacityValue = BigInt(capacity), feeValue = parseEther(fee), staffValue = parseEther(staffCap), collectSeconds = BigInt(collectMinutes) * 60n, spendSeconds = BigInt(spendMinutes) * 60n; if (capacityValue < 1n || capacityValue > 3n) throw new Error('Capacity must be 1–3.'); if (feeValue <= 0n || feeValue * capacityValue > parseEther('0.03')) throw new Error('Total principal must be at most 0.03 USDC.'); if (staffValue <= 0n || staffValue > feeValue * capacityValue) throw new Error('Staff cap must fit within total principal.'); if (collectSeconds < 60n || spendSeconds <= collectSeconds || spendSeconds > 90n * 86400n) throw new Error('Spending duration must be later than collection and within 90 days.'); const metadataHash = keccak256(toBytes(title.trim() || 'ChangeBack event')); contractPlan({ title: 'Create one bounded event', contract: factoryAddress, detail: `${capacityValue} participant(s) × ${usdc(feeValue)}. Staff cap ${usdc(staffValue)} to ${short(staffRecipient)}. Collection ${collectMinutes} min; spending ${spendMinutes} min.`, abi: V3_FACTORY_ABI, functionName: 'createEventWithDurations', args: [metadataHash, feeValue, capacityValue, collectSeconds, spendSeconds, true, [{ recipient: getAddress(staffRecipient), cap: staffValue, category: 2, payAfter: 0n, automatic: false }]], afterReceipt: receipt => { for (const log of receipt.logs) { try { const decoded = decodeEventLog({ abi: V3_FACTORY_ABI, eventName: 'EventCreated', data: log.data, topics: log.topics }); setEventAddress(decoded.args.escrow); return } catch { /* another log */ } } } }) } catch (error) { toast.error(error instanceof Error ? error.message : 'Invalid event settings') } }
+  const planApprove = () => { if (!eventState || !isAddress(applicant)) return toast.error('Load an event and enter a valid participant address.'); contractPlan({ title: 'Approve participant', contract: eventAddress, detail: `Approve ${short(applicant)} until collection closes at ${when(eventState.collectUntil)}.`, abi: V3_EVENT_ABI, functionName: 'approveApplicant', args: [getAddress(applicant), keccak256(toBytes(applicantName.trim() || applicant)), eventState.collectUntil] }) }
+  const planDeposit = () => { if (!eventState || !address) return toast.error('Connect the approved participant wallet.'); setPlan({ title: 'Deposit exact event fee', contract: eventAddress, value: eventState.fee, detail: `Send ${usdc(eventState.fee)} as Arc’s native USDC. This contract does not accept ERC-20 transfer/approve as a deposit route.`, execute: async () => { const { account, wallet } = requireWallet(); const request = { account, to: eventAddress, value: eventState.fee }; await publicClient.call(request); await publicClient.estimateGas(request); return wallet.sendTransaction(request) } }) }
+  const staffBudgetId = useMemo(() => eventState?.budgets.findIndex(item => item.category === 2) ?? -1, [eventState])
+  const planStaff = (action: 'authorize' | 'execute') => { if (staffBudgetId < 0) return toast.error('No staff budget found.'); contractPlan({ title: action === 'authorize' ? 'Authorize staff payment' : 'Execute authorized staff payment', contract: eventAddress, detail: `${action === 'authorize' ? 'Reserve' : 'Pay'} ${usdc(eventState!.budgets[staffBudgetId].cap)} for ${short(eventState!.budgets[staffBudgetId].recipient)}.`, abi: V3_EVENT_ABI, functionName: action === 'authorize' ? 'authorizeStaff' : 'executeAuthorizedStaff', args: action === 'authorize' ? [BigInt(staffBudgetId), keccak256(toBytes('ChangeBack judge demo staff receipt'))] : [BigInt(staffBudgetId)] }) }
+  const planFinalize = () => contractPlan({ title: 'Finalize event', contract: eventAddress, detail: 'Lock spending, calculate each participant’s exact refund entitlement, and make refunds claimable.', abi: V3_EVENT_ABI, functionName: 'finalize' })
+  const planRefund = () => { if (!address) return toast.error('Connect the participant wallet.'); contractPlan({ title: 'Claim participant refund', contract: eventAddress, detail: `Return the recorded entitlement to original payer ${short(address)}. The destination cannot be redirected.`, abi: V3_EVENT_ABI, functionName: 'refundFor', args: [address] }) }
+
+  const isVerifiedProof = factoryAddress === VERIFIED_FACTORY && eventAddress === VERIFIED_EVENT
+  const walletMember = eventState?.members.find(member => member.address.toLowerCase() === address?.toLowerCase())
+  const now = BigInt(Math.floor(Date.now() / 1000))
+
+  return <div className="app-shell"><header className="topbar"><a className="brand" href="/"><span>CB</span><b>ChangeBack</b><em>v3</em></a><nav><button className={mode === 'proof' ? 'active' : ''} onClick={() => { setMode('proof'); setFactoryAddress(VERIFIED_FACTORY); setEventAddress(VERIFIED_EVENT) }}>Verified proof</button><button className={mode === 'launch' ? 'active' : ''} onClick={() => setMode('launch')}>Launch a demo</button></nav><ConnectKitButton /></header>
+    <main><section className="hero"><div><span className="eyebrow"><i /> ARC MAINNET · LIVE APPLICATION</span><h1>Collect together.<br /><span>Return every remainder.</span></h1><p>One bounded event contract turns shared costs into verifiable settlement: approved deposits, fixed recipients, final accounting, and refunds to original senders.</p></div><aside><strong>REAL FUNDS</strong><p>Arc Mainnet uses native USDC for both value and gas. Every write is simulated first and shown for confirmation.</p><StatusPill ok={chainId === ARC_MAINNET}>{chainId === ARC_MAINNET ? 'Wallet on Arc Mainnet' : 'Switch required'}</StatusPill></aside></section>
+      <section className="controlbar"><div><span>NETWORK</span><b>Arc Mainnet</b><small>Chain ID 5042</small></div><div><span>FACTORY</span><b>{short(factoryAddress)}</b><small>{factory?.version === 3n ? 'v3 contract verified' : 'Checking…'}</small></div><div><span>EVENT</span><b>{short(eventAddress)}</b><small>{eventState ? (eventState.finalized ? 'Finalized' : 'Active lifecycle') : 'Not loaded'}</small></div>{isConnected && chainId !== ARC_MAINNET ? <button className="primary" onClick={() => switchChain({ chainId: ARC_MAINNET })} disabled={switching}>{switching ? 'Switching…' : 'Switch to Arc Mainnet'}</button> : <button onClick={() => void refresh()} disabled={loading}>{loading ? 'Refreshing…' : 'Refresh onchain state'}</button>}</section>
+      {mode === 'proof' ? <><section className="section-head"><div><span className="eyebrow">VERIFIED MAINNET RUN</span><h2>Receipts, not promises.</h2></div><p>This preserved v3 event is complete. It proves the accounting path, but cannot accept new deposits or create a second event.</p></section>{eventState && <><section className="metric-grid"><article><span>COLLECTED</span><strong>{usdc(eventState.totalCollected)}</strong><small>{eventState.paidCount.toString()} fully paid</small></article><article><span>STAFF PAID</span><strong>{usdc(eventState.totalSpent)}</strong><small>fixed approved recipient</small></article><article><span>REFUNDED</span><strong>{usdc(eventState.totalRefunded)}</strong><small>original senders only</small></article><article><span>LIABILITY</span><strong>{usdc(eventState.remainingLiability)}</strong><small>{eventState.remainingLiability === 0n ? 'fully settled' : 'still claimable'}</small></article></section><section className="two-col"><article className="panel"><div className="panel-title"><div><span>PARTICIPANTS</span><h3>Exact refund ledger</h3></div><StatusPill ok={eventState.members.every(member => member.claimed)}>All claimed</StatusPill></div>{eventState.members.map(member => <div className="ledger" key={member.address}><code>{short(member.address)}</code><span>Paid {usdc(member.paid)}</span><span>Refund {usdc(member.entitlement)}</span><b>{member.claimed ? 'Claimed' : 'Open'}</b></div>)}</article><article className="panel"><div className="panel-title"><div><span>BUDGETS</span><h3>Fixed recipients and caps</h3></div></div>{eventState.budgets.map((budget, index) => <div className="ledger" key={index}><code>#{index} {categoryName(budget.category)}</code><span>{short(budget.recipient)}</span><span>Cap {usdc(budget.cap)}</span><b>{budget.spent > 0n ? `Paid ${usdc(budget.spent)}` : 'Not paid'}</b></div>)}</article></section></>}<section className="notice"><b>Why event creation is unavailable here</b><p>The deployed Factory permanently allows one event and only its deployment operator may create it. <code>hasCreatedEvent = true</code>. The app therefore preserves this run as proof and offers a fresh self-deployed Factory in “Launch a demo.”</p></section></> : <><section className="section-head"><div><span className="eyebrow">JUDGE-OPERABLE FLOW</span><h2>Your wallet. Your bounded event.</h2></div><p>Deploy a fresh copy of the reviewed v3 Factory, then complete the lifecycle with one to three wallets. No backend or keeper is required.</p></section><section className="launch-grid"><article className="panel step-card"><span className="step-no">01</span><h3>Fresh one-event Factory</h3><p>The preserved Factory is full. Deploying a fresh copy makes your wallet the event operator. No funds are transferred.</p><button className="primary" disabled={!isConnected || chainId !== ARC_MAINNET || pending} onClick={planFactoryDeploy}>Review Factory deployment</button><div className="inline-load"><input placeholder="Or paste a fresh v3 Factory address" value={factoryInput} onChange={event => setFactoryInput(event.target.value)} /><button onClick={() => void loadFactory()}>Load</button></div>{factory && <div className="checks"><StatusPill ok={factory.version === 3n}>Version {factory.version.toString()}</StatusPill><StatusPill ok={factory.operator.toLowerCase() === address?.toLowerCase()}>Operator {short(factory.operator)}</StatusPill><StatusPill ok={!factory.hasCreated}>{factory.hasCreated ? 'Event slot used' : 'Event slot open'}</StatusPill></div>}</article><article className="panel step-card"><span className="step-no">02</span><h3>Create event and budget</h3><p>One staff budget keeps the demonstration short. Total participant principal is contract-capped at 0.03 USDC.</p><div className="form-grid"><Field label="Event label" value={title} onChange={setTitle} /><Field label="Capacity (1–3)" value={capacity} onChange={setCapacity} type="number" min="1" /><Field label="Fee per participant" value={fee} onChange={setFee} /><Field label="Collection minutes" value={collectMinutes} onChange={setCollectMinutes} type="number" min="1" /><Field label="Settlement minutes" value={spendMinutes} onChange={setSpendMinutes} type="number" min="2" /><Field label="Staff cap" value={staffCap} onChange={setStaffCap} /><div className="span-two"><Field label="Staff recipient" value={staffRecipient} onChange={setStaffRecipient} placeholder="0x…" /></div></div><button className="primary" onClick={planCreateEvent} disabled={!factory || factory.hasCreated || pending}>Review event creation</button></article></section>
+        {eventState && !isVerifiedProof && <section className="panel lifecycle"><div className="panel-title"><div><span>EVENT {short(eventAddress)}</span><h3>Live lifecycle controls</h3></div><a href={`${EXPLORER}/address/${eventAddress}`} target="_blank" rel="noreferrer">Explorer ↗</a></div><div className="timeline"><div className="active"><b>Collect</b><span>until {when(eventState.collectUntil)}</span></div><div className={now >= eventState.collectUntil ? 'active' : ''}><b>Settle</b><span>until {when(eventState.spendUntil)}</span></div><div className={eventState.finalized ? 'active' : ''}><b>Refund</b><span>{eventState.finalized ? 'open' : 'after finalize'}</span></div></div><div className="action-grid"><div><span>ORGANIZER</span><h4>Approve participant</h4><Field label="Participant wallet" value={applicant} onChange={setApplicant} placeholder="0x…" /><Field label="Private label (hashed)" value={applicantName} onChange={setApplicantName} /><button onClick={planApprove} disabled={pending || now >= eventState.collectUntil}>Review approval</button></div><div><span>PARTICIPANT</span><h4>Deposit exact fee</h4><p>Connected wallet: <code>{short(address)}</code><br />Required: <b>{usdc(eventState.fee)}</b></p><button onClick={planDeposit} disabled={pending || !walletMember || walletMember.paid > 0n || now >= eventState.collectUntil}>{walletMember?.paid ? 'Deposit recorded' : walletMember ? 'Review deposit' : 'Wallet not approved'}</button></div><div><span>ORGANIZER</span><h4>Authorize fixed staff</h4><p>{staffBudgetId >= 0 ? `${usdc(eventState.budgets[staffBudgetId].cap)} → ${short(eventState.budgets[staffBudgetId].recipient)}` : 'No staff budget'}</p><button onClick={() => planStaff('authorize')} disabled={pending || staffBudgetId < 0 || eventState.budgets[staffBudgetId]?.authorized || eventState.budgets[staffBudgetId]?.spent > 0n}>Review authorization</button></div><div><span>ANY WALLET</span><h4>Execute approved staff</h4><p>Available after collection closes. Duplicate execution is blocked by contract state.</p><button onClick={() => planStaff('execute')} disabled={pending || staffBudgetId < 0 || !eventState.budgets[staffBudgetId]?.authorized || now < eventState.collectUntil}>Review execution</button></div><div><span>ORGANIZER / AFTER DEADLINE</span><h4>Finalize accounting</h4><p>Pending reserved staff must be paid before early finalization.</p><button onClick={planFinalize} disabled={pending || eventState.finalized || now < eventState.collectUntil || eventState.reservedStaff > 0n}>Review finalize</button></div><div><span>PARTICIPANT</span><h4>Claim refund</h4><p>{walletMember ? `Entitlement ${usdc(walletMember.entitlement)}` : 'Connect an event participant wallet.'}</p><button onClick={planRefund} disabled={pending || !eventState.finalized || !walletMember || walletMember.claimed}>{walletMember?.claimed ? 'Refund claimed' : 'Review refund'}</button></div></div></section>}</>}
+      <section className="two-col bottom-row"><article className="panel"><div className="panel-title"><div><span>ONCHAIN HISTORY</span><h3>Event receipts</h3></div><b>{history.length}</b></div>{history.length ? history.map(item => <a className="history" key={item.key} href={`${EXPLORER}/tx/${item.hash}`} target="_blank" rel="noreferrer"><span>{item.label}</span><code>{short(item.hash)}</code><small>Block {item.block.toString()} ↗</small></a>) : <p className="empty">No lifecycle events loaded yet.</p>}</article><article className="panel resources"><div className="panel-title"><div><span>BUILD EVIDENCE</span><h3>Inspect the source</h3></div></div><a href="https://studio.arc.io/app/8fb26e26-3f43-40dc-a940-85228dbbf710" target="_blank" rel="noreferrer"><b>Arc Studio</b><span>Original build workspace ↗</span></a><a href="https://github.com/noboru59631/changeback" target="_blank" rel="noreferrer"><b>GitHub</b><span>Contracts, tests, and UI source ↗</span></a><a href={`${EXPLORER}/address/${VERIFIED_FACTORY}`} target="_blank" rel="noreferrer"><b>Verified v3 Factory</b><span>{short(VERIFIED_FACTORY)} ↗</span></a><a href={`${EXPLORER}/address/${VERIFIED_EVENT}`} target="_blank" rel="noreferrer"><b>Completed event</b><span>{short(VERIFIED_EVENT)} ↗</span></a></article></section>
+    </main><footer><span>ChangeBack v3 · Built with Arc Studio</span><span>Mainnet prototype · bounded to 0.03 native USDC per event</span></footer>
+    {plan && <div className="modal-backdrop" role="presentation" onMouseDown={() => !pending && setPlan(null)}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="tx-title" onMouseDown={event => event.stopPropagation()}><span className="eyebrow">FINAL WALLET CHECK</span><h3 id="tx-title">{plan.title}</h3><p>{plan.detail}</p><dl><div><dt>Network</dt><dd>Arc Mainnet · 5042</dd></div><div><dt>Destination</dt><dd><code>{plan.contract}</code></dd></div><div><dt>Value</dt><dd>{usdc(plan.value)}</dd></div><div><dt>Connected wallet</dt><dd><code>{address ?? 'Not connected'}</code></dd></div></dl><div className="warning">The app simulates this exact transaction before opening your wallet. Check the wallet’s final gas estimate and do not sign if any field differs.</div>{lastHash && pending && <a href={`${EXPLORER}/tx/${lastHash}`} target="_blank" rel="noreferrer">View pending transaction ↗</a>}<div className="modal-actions"><button onClick={() => setPlan(null)} disabled={pending}>Cancel</button><button className="primary" onClick={() => void submitPlan()} disabled={pending || !isConnected || chainId !== ARC_MAINNET}>{pending ? 'Confirming onchain…' : 'Simulate & open wallet'}</button></div></section></div>}
+  </div>
 }
-
-function isValidAddress(s: string): s is `0x${string}` {
-  return /^0x[0-9a-fA-F]{40}$/.test(s)
-}
-
-/** Parse ?chainId= from URL. Returns supported chain or undefined. */
-function parseUrlChainId(search: string): number | undefined {
-  const raw = new URLSearchParams(search).get('chainId')
-  if (!raw) return undefined
-  const n = parseInt(raw, 10)
-  return SUPPORTED_CHAIN_IDS.includes(n) ? n : undefined
-}
-
-export default function App() {
-  const { chainId: walletChainId, isConnected } = useAccount()
-  const { switchChain, isPending: isSwitching } = useSwitchChain()
-
-  // ── URL-param initialisation ─────────────────────────────────────────────
-  const [factoryAddr, setFactoryAddr] = useState(
-    () => new URLSearchParams(window.location.search).get('factory') ?? ''
-  )
-  const [vaultAddr, setVaultAddr] = useState(
-    () => new URLSearchParams(window.location.search).get('vault') ?? ''
-  )
-
-  // ── Selected chain — independent of wallet ───────────────────────────────
-  // Priority: URL param → user selector. Wallet chain does NOT override this.
-  const [selectedChainId, setSelectedChainId] = useState<number>(
-    () => parseUrlChainId(window.location.search) ?? ARC_TESTNET_CHAIN_ID
-  )
-  const selectedChainConfig = CHAIN_CONFIG[selectedChainId]
-
-  // Mainnet guard: show warning when user selects mainnet; tracks ack for UX
-  // only. The WriteGate does NOT use this flag — it enforces the allowlist.
-  const [mainnetAcknowledged, setMainnetAcknowledged] = useState(false)
-  const onMainnet = selectedChainId === ARC_MAINNET_CHAIN_ID
-
-  const [showConfig, setShowConfig] = useState(false)
-  const [showDemo,   setShowDemo]   = useState(false)
-
-  // ── Vault phase (live read — no wallet required) ──────────────────────────
-  const { data: phaseData } = useReadContract({
-    address: isValidAddress(vaultAddr) ? vaultAddr : undefined,
-    abi: VAULT_ABI,
-    functionName: 'getPhase',
-    chainId: selectedChainId,       // use SELECTED chain, never wallet chain
-    query: { refetchInterval: 10_000 },
-  })
-  const phase      = phaseData !== undefined ? Number(phaseData) : null
-  const activeStep = phaseToStep(phase)
-
-  // ── Factory registry check ────────────────────────────────────────────────
-  // isVault is informational: confirms the vault was created through THIS
-  // factory. It does NOT confirm the factory itself is a reviewed deployment.
-  const factoryValid      = isValidAddress(factoryAddr)
-  const vaultValid        = isValidAddress(vaultAddr)
-  // Computed once from the real allowlist — passed down to all write components.
-  const factoryIsReviewed = factoryValid && isReviewedFactory(selectedChainId, factoryAddr)
-
-  const {
-    data:    isRegisteredInFactory,
-    isLoading: isRegisteredLoading,
-    isError:   isRegisteredError,
-  } = useReadContract({
-    address: factoryValid ? factoryAddr : undefined,
-    abi: FACTORY_ABI,
-    functionName: 'isVault',
-    args: vaultValid ? [vaultAddr] : undefined,
-    chainId: selectedChainId,
-    query: { enabled: factoryValid && vaultValid },
-  })
-
-  // ── Share URL (includes chainId, factory, vault) ──────────────────────────
-  // Always includes chainId so mainnet share links load the correct chain.
-  const shareUrl = vaultValid
-    ? `${window.location.origin}${window.location.pathname}` +
-      `?chainId=${selectedChainId}` +
-      (factoryValid ? `&factory=${factoryAddr}` : '') +
-      `&vault=${vaultAddr}`
-    : null
-
-  // ── Chain mismatch banner ─────────────────────────────────────────────────
-  const walletOnWrongChain = isConnected && walletChainId !== selectedChainId
-
-  return (
-    <div className="min-h-dvh bg-slate-50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');`}</style>
-
-      {/* Header */}
-      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-sm sticky top-0 z-20">
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-slate-900 flex items-center justify-center">
-              <span className="text-white text-[10px] font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>CB</span>
-            </div>
-            <span className="font-semibold text-slate-900 text-sm" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              ChangeBack
-            </span>
-            <span className="text-xs text-slate-400 hidden sm:inline">
-              · {selectedChainConfig.label}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowDemo(s => !s)}
-              className={`p-2 rounded-lg text-sm transition-colors flex items-center gap-1 ${
-                showDemo
-                  ? 'bg-violet-100 text-violet-600'
-                  : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
-              }`}
-              title="Toggle demo view"
-            >
-              <Eye size={14} />
-              <span className="text-xs hidden sm:inline">Demo</span>
-            </button>
-            <button
-              onClick={() => setShowConfig(s => !s)}
-              className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-              title="Configure addresses"
-            >
-              <Settings size={16} />
-            </button>
-            <ConnectKitButton />
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-5 pb-20">
-
-        {/* Mainnet info banner — informational ONLY; does not gate writes */}
-        {onMainnet && !mainnetAcknowledged && (
-          <div className="rounded-2xl bg-red-50 border border-red-200 px-4 py-4 text-sm text-red-700">
-            <div className="font-semibold mb-1">Arc Mainnet — real funds</div>
-            <p className="text-xs leading-relaxed mb-3">
-              You are viewing Arc Mainnet. Transactions involve real USDC and are irreversible.
-              Use a reviewed factory and connect your wallet on Arc Mainnet before submitting
-              a transaction. Check the recipient, amount, and network fee in your wallet.
-            </p>
-            <button
-              onClick={() => setMainnetAcknowledged(true)}
-              className="rounded-lg bg-red-700 text-white px-4 py-1.5 text-xs font-semibold hover:bg-red-800"
-            >
-              Understood
-            </button>
-          </div>
-        )}
-
-        {/* Setup banner: no deployment config */}
-        {!factoryValid && !showDemo && (
-          <div className="rounded-2xl bg-amber-50 border border-amber-100 px-4 py-4 text-sm text-amber-700">
-            <div className="flex items-start gap-2">
-              <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-              <div>
-                <strong className="font-semibold">No factory address configured.</strong>
-                <p className="mt-1 text-xs leading-relaxed">
-                  ChangeBack contracts have not been deployed yet. Deployment requires explicit
-                  approval. Once deployed, paste the factory address in the settings panel.
-                  Vault reads are available to anyone with a share link — no wallet required.
-                </p>
-                <button
-                  onClick={() => setShowDemo(true)}
-                  className="mt-2 text-xs underline text-amber-600 hover:text-amber-800"
-                >
-                  View design overview without connecting
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Config panel */}
-        {showConfig && (
-          <div className="rounded-2xl bg-white border border-slate-200 px-4 py-4 space-y-3 shadow-sm">
-            <div className="text-xs font-medium text-slate-500 uppercase tracking-widest">Configuration</div>
-
-            {/* Chain selector — independent of wallet */}
-            <div>
-              <div className="text-xs text-slate-500 mb-1.5">Network (for reads and writes)</div>
-              <div className="flex gap-2">
-                {SUPPORTED_CHAIN_IDS.map(id => (
-                  <button
-                    key={id}
-                    onClick={() => { setSelectedChainId(id); setMainnetAcknowledged(false) }}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium border transition-colors ${
-                      selectedChainId === id
-                        ? 'bg-slate-900 text-white border-slate-900'
-                        : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'
-                    }`}
-                  >
-                    {CHAIN_CONFIG[id].label}
-                    {id === ARC_MAINNET_CHAIN_ID && (
-                      <span className="ml-1 text-[10px] opacity-60">real funds</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-slate-400 mt-1">
-                This controls which chain is read. Your wallet must match for any write.
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-xs text-slate-500 mb-1">Factory address</label>
-              <input
-                type="text" placeholder="0x…"
-                value={factoryAddr} onChange={e => setFactoryAddr(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-slate-400"
-              />
-              {factoryValid && !factoryIsReviewed && (
-                <div className="mt-1.5 flex items-start gap-1.5 text-xs text-red-600">
-                  <ShieldOff size={11} className="shrink-0 mt-0.5" />
-                  <span>
-                    Unverified factory — not in the reviewed deployment allowlist.
-                    Vault reads are available. Writes are disabled until a reviewed
-                    deployment is configured.
-                  </span>
-                </div>
-              )}
-              {factoryIsReviewed && (
-                <div className="mt-1.5 flex items-start gap-1.5 text-xs text-emerald-600">
-                  <span className="shrink-0 mt-0.5">✓</span>
-                  <span>Reviewed deployment — in the verified allowlist for {selectedChainConfig.label}.</span>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs text-slate-500 mb-1">Vault address (load existing vault)</label>
-              <input
-                type="text" placeholder="0x…"
-                value={vaultAddr} onChange={e => setVaultAddr(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-slate-400"
-              />
-            </div>
-
-            {/* Factory registry result — informational */}
-            {vaultValid && factoryValid && !isRegisteredLoading && isRegisteredError && (
-              <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-600">
-                Could not verify vault registry (RPC error).
-              </div>
-            )}
-            {vaultValid && factoryValid && !isRegisteredLoading && !isRegisteredError && isRegisteredInFactory === false && (
-              <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-600">
-                This vault is NOT registered in the configured factory. It may have been deployed
-                directly (bypassing the factory) or the factory address is wrong.
-              </div>
-            )}
-            {vaultValid && factoryValid && !isRegisteredLoading && !isRegisteredError && isRegisteredInFactory === true && (
-              <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2 text-xs text-slate-500">
-                Factory registry: vault confirmed created through this factory.
-                Note: this does not verify that the factory itself is a reviewed deployment —
-                writes remain disabled until a reviewed factory address is configured.
-              </div>
-            )}
-            {isRegisteredLoading && (
-              <div className="text-xs text-slate-400 animate-pulse">Checking factory registry…</div>
-            )}
-
-            {/* Share link — always includes chainId, factory, vault */}
-            {shareUrl && (
-              <div className="text-xs text-slate-400">
-                <div className="mb-0.5">Read-only share link (no wallet required):</div>
-                <a href={shareUrl} target="_blank" rel="noopener noreferrer"
-                  className="text-blue-500 hover:underline inline-flex items-center gap-0.5 break-all">
-                  {shareUrl.slice(0, 55)}{shareUrl.length > 55 ? '…' : ''} <ExternalLink size={9} />
-                </a>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Demo view — no wallet, no chain gate, clearly labeled */}
-        {showDemo && <DemoView />}
-
-        {/* ─── Read-only section — NO wallet gate ───────────────────────────── */}
-        {/* VaultCard, StepRail, and phase reads are available without a wallet. */}
-        {!showDemo && (
-          <div className="space-y-5">
-
-            {/* Chain mismatch: wallet on different chain than selected */}
-            {walletOnWrongChain && (
-              <div className="rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3 flex items-center justify-between gap-3">
-                <div className="text-xs text-amber-700">
-                  Your wallet is on a different chain than the selected network ({selectedChainConfig.label}).
-                  Switch your wallet to submit transactions.
-                </div>
-                <button
-                  onClick={() => switchChain({ chainId: selectedChainId })}
-                  disabled={isSwitching}
-                  className="shrink-0 rounded-lg bg-amber-600 text-white px-3 py-1.5 text-xs font-medium hover:bg-amber-700 disabled:opacity-50"
-                >
-                  {isSwitching ? 'Switching…' : `Switch to ${selectedChainConfig.label}`}
-                </button>
-              </div>
-            )}
-
-            {/* Vault status card — read-only, no wallet */}
-            {vaultValid && (
-              <VaultCard
-                vaultAddress={vaultAddr}
-                chainId={selectedChainId}
-              />
-            )}
-
-            {/* Step rail — read-only */}
-            {(vaultValid || factoryValid) && (
-              <div className="overflow-x-auto">
-                <StepRail activeStep={vaultValid ? activeStep : 0} />
-              </div>
-            )}
-
-            {/* Step panels */}
-            <div className="rounded-2xl bg-white border border-slate-100 shadow-sm px-5 py-5">
-              {!factoryValid && !vaultValid && (
-                <div className="text-sm text-slate-400 text-center py-8">
-                  Enter a factory address in settings to create a vault,
-                  or a vault address to view an existing one. No wallet required for reads.
-                </div>
-              )}
-
-              {factoryValid && !vaultValid && (
-                <StepCreate
-                  factoryAddress={factoryAddr}
-                  selectedChainId={selectedChainId}
-                  isReviewedFactory={factoryIsReviewed}
-                  onVaultCreated={(addr) => {
-                    setVaultAddr(addr)
-                    setShowConfig(false)
-                  }}
-                />
-              )}
-
-              {vaultValid && phase !== null && (
-                <>
-                  {phase === Phase.Collecting && (
-                    <StepCollect
-                      vaultAddress={vaultAddr}
-                      selectedChainId={selectedChainId}
-                      factoryAddress={factoryAddr || undefined}
-                      isVaultRegistered={isRegisteredInFactory}
-                      isVaultRegisteredLoading={isRegisteredLoading}
-                      isVaultRegisteredError={isRegisteredError}
-                    />
-                  )}
-                  {phase === Phase.Active && (
-                    <StepApproveSpend
-                      vaultAddress={vaultAddr}
-                      selectedChainId={selectedChainId}
-                      factoryAddress={factoryAddr || undefined}
-                      isVaultRegistered={isRegisteredInFactory}
-                      isVaultRegisteredLoading={isRegisteredLoading}
-                      isVaultRegisteredError={isRegisteredError}
-                    />
-                  )}
-                  {phase === Phase.Returning && (
-                    <StepReturn
-                      vaultAddress={vaultAddr}
-                      selectedChainId={selectedChainId}
-                      factoryAddress={factoryAddr || undefined}
-                      isVaultRegistered={isRegisteredInFactory}
-                      isVaultRegisteredLoading={isRegisteredLoading}
-                      isVaultRegisteredError={isRegisteredError}
-                    />
-                  )}
-                  {/* StepClose is rendered during BOTH Returning and Closed phases.
-                      close() is callable on-chain from Returning (once liability=0),
-                      so it must be reachable in the UI before phase transitions to Closed.
-                      StepClose disables its button until canClose===true and shows the
-                      locked banner once isClosed===true — it handles both states. */}
-                  {shouldShowClose(phase) && (
-                    <StepClose
-                      vaultAddress={vaultAddr}
-                      selectedChainId={selectedChainId}
-                      factoryAddress={factoryAddr || undefined}
-                      isVaultRegistered={isRegisteredInFactory}
-                      isVaultRegisteredLoading={isRegisteredLoading}
-                      isVaultRegisteredError={isRegisteredError}
-                    />
-                  )}
-                </>
-              )}
-
-              {vaultValid && phase === null && (
-                <div className="py-8 text-center text-sm text-slate-400 animate-pulse">
-                  Loading vault…
-                </div>
-              )}
-            </div>
-
-            <p className="text-center text-xs text-slate-400 pb-4">
-              Arc Testnet + Mainnet · USDC only · testnet has no real funds.{' '}
-              <a href="https://docs.arc.io/ai/arc-studio" target="_blank" rel="noopener noreferrer"
-                className="underline hover:text-slate-600">Arc Studio docs</a>
-            </p>
-          </div>
-        )}
-      </main>
-    </div>
-  )
-}
+export default App
