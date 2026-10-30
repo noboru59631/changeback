@@ -1,4 +1,83 @@
-# ChangeBack
+# ChangeBack v3
+
+ChangeBack is a small-event settlement protocol for Arc. Participants pay native USDC once; the contract enforces predeclared expense limits and returns the remaining principal to the original payers after finalization.
+
+This repository contains the v3 contracts, keeper tooling, and a read-only public proof UI. It is an Arc Microgrants 2 submission candidate.
+
+## Mainnet proof
+
+The v3 Mainnet demonstration completed with no funds or refund liabilities left in escrow.
+
+| Item | Result |
+| --- | ---: |
+| Participant deposits | 0.020 USDC |
+| Staff settlement | 0.002 USDC |
+| Refund to participant A | 0.009 USDC |
+| Refund to participant B | 0.009 USDC |
+| Total refunds | 0.018 USDC |
+| Final escrow balance | 0 USDC |
+| Final refund liability | 0 USDC |
+
+- v3 Factory: [`0xAEE87C6fcB12023BAEE096e2B01d8667626f8a36`](https://explorer.arc.io/address/0xAEE87C6fcB12023BAEE096e2B01d8667626f8a36)
+- Demonstration Event: [`0xfaA58b67BF24Bc9AB92959339105F6e59901d323`](https://explorer.arc.io/address/0xfaA58b67BF24Bc9AB92959339105F6e59901d323)
+- [Staff settlement](https://explorer.arc.io/tx/0xb8f6aa0445d70c3f02d9e866e6fba09b4be9ba522ba0edbb9d5851c50812995c)
+- [Finalization](https://explorer.arc.io/tx/0xeb1ecd0bf3edbb37d3eeb8653b5c3f31a3a7c8ed3958d12cbd87fefab1584747)
+- [Final refunds](https://explorer.arc.io/tx/0x42a04254eed02d6313b9b11f70eede4a3b34ab7892d1e39acbcb57dbb5f9bbe1)
+- [Arc Studio project](https://studio.arc.io/app/8fb26e26-3f43-40dc-a940-85228dbbf710)
+- [Read-only v3 Mainnet proof UI](https://changeback-v3-mainnet-proof.crypto5555111.chatgpt.site)
+- [42-second v3 evidence video](https://changeback-v3-mainnet-proof.crypto5555111.chatgpt.site/ChangeBack-v3-Arc-Mainnet-proof-demo-2026-10-31.mp4)
+- [DoraHacks submission](https://dorahacks.io/build/50059)
+
+Both participant records report `claimed=true`. Independent read-only RPC verification also confirmed `contractVersion=3`, the Factory/Event code, totals, expense accounting, final balance, and liability.
+
+The scheduled venue payment was **not executed** because its configured time window had already passed. This proof therefore establishes participant deposits, a preauthorized staff settlement, finalization, and exact pro-rata refunds. It does not claim that the venue leg or a fully unattended production service was demonstrated.
+
+## Safety model
+
+- Native USDC only; Arc native USDC uses 18 decimals.
+- Factory creation is operator-restricted and bounded for this demonstration.
+- Event principal and participant capacity are capped.
+- Expenses cannot exceed their immutable budgets.
+- Reserved staff compensation cannot be consumed by other expenses.
+- Refund recipients are the original participant addresses and cannot be redirected.
+- Failed refund delivery remains visible as a fully backed liability.
+- The public Mainnet proof UI is read-only and does not request signatures or transfers.
+
+Do not send funds to any address in this README. The demonstration Event is finalized.
+
+## Local verification
+
+```bash
+npm install
+npm run typecheck:app
+npm run build
+```
+
+The complete repository also includes Foundry contract tests and keeper/accounting tests. The previously completed release suite recorded 39 passing checks; the final publication pass reran the public app typecheck and production build and performed fresh read-only Mainnet verification.
+
+## Repository map
+
+- `contracts/` — v3 Factory and Event contracts
+- `src/` — public UI and event-accounting code
+- `scripts/` — deployment, keeper, recovery, and verification utilities
+- `docs/` — operating limits, validation evidence, and security notes
+- `.openai/hosting.json` — isolated public proof-site configuration
+
+## Historical separation
+
+The earlier public ChangeBack UI and its original Vault remain unchanged. The v3 proof is published as a separate site and points to the new Factory and completed Event so that historical evidence is preserved.
+
+## License and status
+
+Hackathon prototype and public proof. Review the contracts and operating limits before any reuse with real funds. No audit or production-readiness claim is made.
+
+
+
+---
+
+# Historical v1 Mainnet proof (2026-10-20)
+
+The material below is preserved unchanged as the earlier Vault demonstration. It is separate from the v3 settlement proof above.
 
 A time-bounded shared USDC budget built in Arc Studio. Participants collect funds, approve payments by quorum, and return unspent funds to contributors before closing the vault.
 
